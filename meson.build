@@ -25,7 +25,7 @@ endif
 
 eigen = dependency('eigen3', version: '>=3.4.0')
 
-lib_sources = [  # All source files (excluding headers)
+lib_sources = [ # All source files (excluding headers)
 ]
 
 lib = static_library(
