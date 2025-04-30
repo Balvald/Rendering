@@ -7,12 +7,12 @@
 
 #include <Eigen/Dense>
 
-class ray
+class Ray
 {
 
     public:
-        ray() = default;
-        ray(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) : orig(origin), dir(direction) {}
+        Ray() = default;
+        Ray(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) : orig(origin), dir(direction) {}
 
         Eigen::Vector3d origin() const { return orig; }
         Eigen::Vector3d direction() const { return dir; }
