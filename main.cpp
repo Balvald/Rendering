@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 
-
+#include "ray.h"
 #include "camera.h"
 
 #define CIMG
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
     for (int j = 0; j < image_height; ++j)
     {
-        std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
+        std::cout << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
         for (int i = 0; i < image_width; i++)
         {
             auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
             ray r = ray(camera_center, ray_direction);
 
             Eigen::Vector3d pixel_color = ray_color(r);
-            write_color(std::cout, pixel_color);
+            // write_color(std::cout, pixel_color);
 
             unsigned char color[3];
 
@@ -128,8 +128,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    std::clog << "\rDone.                 \n";
+    std::stringstream concat;
+    concat << "multisampled" << samples_per_pixel << "-" << image_width << "x" << image_height << ".bmp";
+    std::string filename = concat.str();
 
+    auto test = image.save(filename.c_str());
+
+
+    std::cout << "\rDone.                 \n";
     std::cout << "Goodbye from rank " << rank << "\n";
 
 #ifdef USE_MPI

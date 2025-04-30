@@ -1,4 +1,4 @@
-project('SPHSolver', ['c', 'cpp'], default_options : ['cpp_std=c++20'], )
+project('Raytracer', ['c', 'cpp'], default_options : ['cpp_std=c++20'], )
 
 add_global_arguments('-Od', language : 'cpp')
 
@@ -16,10 +16,12 @@ elif host_machine.system() == 'linux'
 elif host_machine.system() == 'darwin'
     # We are on Mac (fp: Don't own a Mac, so this is untested)
     mpi = dependency('mpi', language: 'cpp')
+    message('Darwin Platform. Hope you have MPI available as its needed.')
+    message('You\'re on your own if this doesn\'t work!')
 else
     # We are on some other unknown platform
     mpi = dependency('mpi', language: 'cpp')
-    message('Unknown platform. Hope you have MPI is available as needed.')
+    message('Unknown platform. Hope you have MPI available as its needed.')
     message('You\'re on your own if this doesn\'t work!')
 endif
 
@@ -36,7 +38,7 @@ lib = static_library(
 
 lib_incdirs = include_directories('.')
 
-executable('demo', 'main.cpp',
+executable('raytracer', 'main.cpp',
     include_directories : [lib_incdirs],
 	# link_with : [lib],
     dependencies : [eigen, mpi])
