@@ -1,0 +1,8 @@
+fs = import('fs')
+fs.copyfile('test.obj')
+fs.copyfile('test2.obj')
+fs.copyfile('test3.obj')
+fs.copyfile('test4.obj')
+fs.copyfile('test5.obj')
+fs.copyfile('testlegacy.obj')
+fs.copyfile('testnew.obj')

@@ -10,6 +10,7 @@
 
 #include "ray.h"
 #include "camera.h"
+#include "triangle.h"
 
 #define CIMG
 #include "CImg.h"
@@ -55,6 +56,19 @@ inline Eigen::Vector3d ray_color(ray& r)
     return Eigen::Vector3d(0,0,0);
 }
 
+void load_model(std::string model_path,
+                tinyobj::attrib_t* attrib,
+                std::vector<tinyobj::shape_t>* shapes,
+                std::vector<tinyobj::material_t>* materials)
+{
+    std::string err;
+
+    if (!tinyobj::LoadObj(attrib, shapes, materials, &err, model_path.c_str()))
+    {
+        throw std::runtime_error(err);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     int rank = 0, size = 1;
@@ -69,17 +83,50 @@ int main(int argc, char *argv[])
 
     std::cout << "Hello I am rank " << rank << " of " << size << "\n";
 
-    // Image
+    std::string path = std::string(".\\models\\testnew.obj");
 
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+
+    std::vector<Triangle> triangles = std::vector<Triangle>();
+
+    load_model(path, &attrib, &shapes, &materials);
+
+    for (auto shape : shapes)
+    {
+        for (int i = 0; i < shape.mesh.indices.capacity(); i+=3)
+        {
+            auto v11 = shape.mesh.indices[i].vertex_index * 3 + 0;
+            auto v12 = shape.mesh.indices[i].vertex_index * 3 + 1;
+            auto v13 = shape.mesh.indices[i].vertex_index * 3 + 2;
+
+            auto v21 = shape.mesh.indices[i+1].vertex_index * 3 + 0;
+            auto v22 = shape.mesh.indices[i+1].vertex_index * 3 + 1;
+            auto v23 = shape.mesh.indices[i+1].vertex_index * 3 + 2;
+
+            auto v31 = shape.mesh.indices[i+2].vertex_index * 3 + 0;
+            auto v32 = shape.mesh.indices[i+2].vertex_index * 3 + 1;
+            auto v33 = shape.mesh.indices[i+2].vertex_index * 3 + 2;
+
+            triangles.push_back(
+                Triangle(
+                    Eigen::Vector3d(attrib.vertices[v11], attrib.vertices[v12], attrib.vertices[v13]),
+                    Eigen::Vector3d(attrib.vertices[v21], attrib.vertices[v22], attrib.vertices[v23]),
+                    Eigen::Vector3d(attrib.vertices[v31], attrib.vertices[v32], attrib.vertices[v33])));
+        }
+    }
+
+
+    // Image
     auto aspect_ratio = 16.0 / 9.0;
-    int image_width = 400;
+    int image_width = 1920;
 
     // Calculate the image height, and ensure that it's at least 1.
     int image_height = int(image_width / aspect_ratio);
     image_height = (image_height < 1) ? 1 : image_height;
 
     // Camera
-
     auto focal_length = 1.0;
     auto viewport_height = 2.0;
     auto viewport_width = viewport_height * (double(image_width)/image_height);
@@ -95,7 +142,9 @@ int main(int argc, char *argv[])
 
     // Calculate the location of the upper left pixel.
     auto viewport_upper_left = camera_center
-                             - Eigen::Vector3d(0, 0, focal_length) - viewport_u/2 - viewport_v/2;
+                               - Eigen::Vector3d(0, 0, focal_length)
+                               - viewport_u/2
+                               - viewport_v/2;
     auto pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
     cimg_library::CImg<double> image(image_width, image_height, 1, 3, 0);
@@ -116,6 +165,9 @@ int main(int argc, char *argv[])
             auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
             auto ray_direction = pixel_center - camera_center;
             ray r = ray(camera_center, ray_direction);
+
+
+
 
             Eigen::Vector3d pixel_color = ray_color(r);
             // write_color(std::cout, pixel_color);

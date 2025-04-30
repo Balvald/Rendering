@@ -3,6 +3,8 @@ project('Raytracer', ['c', 'cpp'], default_options : ['cpp_std=c++20'], )
 add_global_arguments('-Od', language : 'cpp')
 
 
+subdir('models')
+
 if host_machine.system() == 'windows'
     # We are on Windows
     # Add MSMPI dependency by hand.
