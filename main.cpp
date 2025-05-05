@@ -94,8 +94,8 @@ int main(int argc, char *argv[])
     // std::vector<Triangle> triangles = std::vector<Triangle>();
 
     std::vector<Triangle> triangles = {
-        Triangle(Eigen::Vector3d(0, 1, -5), Eigen::Vector3d(-1, -1, -5), Eigen::Vector3d(1, -1, -5)),
-        Triangle(Eigen::Vector3d(1, 1, -6), Eigen::Vector3d(0, -1, -6), Eigen::Vector3d(2, -1, -6))
+        // Triangle(Eigen::Vector3d(0, 1, -5), Eigen::Vector3d(-1, -1, -5), Eigen::Vector3d(1, -1, -5)),
+        // Triangle(Eigen::Vector3d(1, 1, -6), Eigen::Vector3d(0, -1, -6), Eigen::Vector3d(2, -1, -6))
     };
 
     load_model(path, &attrib, &shapes, &materials);
