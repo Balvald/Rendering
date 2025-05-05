@@ -194,7 +194,9 @@ int main(int argc, char *argv[])
     // cast rays and check for intersections
     std::cout << "Rendering image...\n";
 
+    #pragma omp parallel for
     for (int j = image_height - 1; j >= 0; --j) {
+        #pragma omp parallel for
         for (int i = 0; i < image_width; ++i) {
             // Compute normalized coordinates
             double u = double(i) / (image_width - 1);
@@ -230,6 +232,7 @@ int main(int argc, char *argv[])
                 color[2] = 0;   // Blue
             }
 
+            #pragma omp critical
             image.draw_point(i, image_height - j, color);
         }
     }
