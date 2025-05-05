@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\testlegacy.obj");
+    std::string path = std::string(".\\models\\fouranimals.obj");
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -105,45 +105,43 @@ int main(int argc, char *argv[])
     std::vector<Eigen::Vector3d> vertices = {};
     std::vector<Eigen::Vector3i> faces = {};
 
-    std::vector<Triangle> triangles = {
-        // Triangle(Eigen::Vector3d(0, 1, -5), Eigen::Vector3d(-1, -1, -5), Eigen::Vector3d(1, -1, -5)),
-        // Triangle(Eigen::Vector3d(1, 1, -6), Eigen::Vector3d(0, -1, -6), Eigen::Vector3d(2, -1, -6))
-    };
+    std::vector<Triangle> triangles = {};
 
     load_model(path, &attrib, &shapes, &materials);
 
     // Loop over shapes
-    for (auto shape : shapes) {
+    // #pragma omp parallel for
+    for (auto shape : shapes)
+    {
         // Loop over faces(polygon)
         size_t index_offset = 0;
 
         std::cout << "shape.mesh.indices.size(): " << shape.mesh.indices.size() << std::endl;
         std::cout << "shape.mesh.num_face_vertices.size(): " << shape.mesh.num_face_vertices.size() << std::endl;
 
-        for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
+        #pragma omp parallel for
+        for (long long f = 0; f < shape.mesh.num_face_vertices.size(); f++)
         {
             // going to a single face
 
-            size_t fv = shape.mesh.num_face_vertices[f];
+            size_t fv = shape.mesh.num_face_vertices[static_cast<size_t>(f)];
         
-            std::cout << "fv: " << fv << std::endl;
+            // std::cout << "fv: " << fv << std::endl;
             // create vector for the face
-            std::vector<Eigen::Vector3d> face_vertices = std::vector<Eigen::Vector3d>(shape.mesh.num_face_vertices[f]);
+            std::vector<Eigen::Vector3d> face_vertices = std::vector<Eigen::Vector3d>();
 
             // Loop over vertices in the face.
-            for (size_t v = 0; v < fv; v++) {
+            for (size_t v = 0; v < fv; v++)
+            {
                 // access to vertex
                 tinyobj::index_t index = shape.mesh.indices[index_offset + v];
                 double vx = attrib.vertices[3*index.vertex_index+0];
                 double vy = attrib.vertices[3*index.vertex_index+1];
                 double vz = attrib.vertices[3*index.vertex_index+2];
         
-                std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
+                // std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
 
-                face_vertices.push_back(Eigen::Vector3d(vx, vy, vz));
-
-
-                std::cout << attrib.normals.size() << std::endl;
+                // std::cout << attrib.normals.size() << std::endl;
 
                 // Check if `normal_index` is zero or positive. negative = no normal data
                 /*if (index.normal_index >= 0) {
@@ -164,19 +162,25 @@ int main(int argc, char *argv[])
                 // double green = attrib.colors[3*index.vertex_index)+1];
                 // double blue  = attrib.colors[3*index.vertex_index)+2];
 
-                std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
+                // std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
+
+                face_vertices.push_back(Eigen::Vector3d(vx, vy, vz));
             }
 
-            triangles.push_back(
-                Triangle(
-                    face_vertices[0],
-                    face_vertices[1],
-                    face_vertices[2]));
+            Triangle t = Triangle(
+                face_vertices[0],
+                face_vertices[1],
+                face_vertices[2]);
+
+            // std::cout << "Triangle: (" << t.v1.x() << ", " << t.v1.y() << ", " << t.v1.z() << ")" << std::endl;
+
+            #pragma omp critical
+            triangles.push_back(t);
 
             index_offset += fv;
         
             // per-face material
-            shape.mesh.material_ids[f];
+            // shape.mesh.material_ids[f];
         }
     }
 
@@ -232,7 +236,7 @@ int main(int argc, char *argv[])
                 color[2] = 0;   // Blue
             }
 
-            #pragma omp critical
+            //#pragma omp critical
             image.draw_point(i, image_height - j, color);
         }
     }
