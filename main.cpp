@@ -93,6 +93,9 @@ int main(int argc, char *argv[])
 
     // std::vector<Triangle> triangles = std::vector<Triangle>();
 
+    std::vector<Eigen::Vector3d> vertices = {};
+    std::vector<Eigen::Vector3i> faces = {};
+
     std::vector<Triangle> triangles = {
         // Triangle(Eigen::Vector3d(0, 1, -5), Eigen::Vector3d(-1, -1, -5), Eigen::Vector3d(1, -1, -5)),
         // Triangle(Eigen::Vector3d(1, 1, -6), Eigen::Vector3d(0, -1, -6), Eigen::Vector3d(2, -1, -6))
@@ -100,31 +103,68 @@ int main(int argc, char *argv[])
 
     load_model(path, &attrib, &shapes, &materials);
 
-    for (auto shape : shapes)
-    {
-        for (int i = 0; i < shape.mesh.indices.capacity(); i+=3)
+    // Loop over shapes
+    for (auto shape : shapes) {
+        // Loop over faces(polygon)
+        size_t index_offset = 0;
+
+        std::cout << "shape.mesh.indices.size(): " << shape.mesh.indices.size() << std::endl;
+        std::cout << "shape.mesh.num_face_vertices.size(): " << shape.mesh.num_face_vertices.size() << std::endl;
+
+        for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
         {
-            auto v11 = shape.mesh.indices[i].vertex_index * 3 + 0;
-            auto v12 = shape.mesh.indices[i].vertex_index * 3 + 1;
-            auto v13 = shape.mesh.indices[i].vertex_index * 3 + 2;
+            // going to a single face
 
-            auto v21 = shape.mesh.indices[i+1].vertex_index * 3 + 0;
-            auto v22 = shape.mesh.indices[i+1].vertex_index * 3 + 1;
-            auto v23 = shape.mesh.indices[i+1].vertex_index * 3 + 2;
+            size_t fv = shape.mesh.num_face_vertices[f];
+        
+            std::cout << "fv: " << fv << std::endl;
+            // create vector for the face
+            std::vector<Eigen::Vector3d> face_vertices = std::vector<Eigen::Vector3d>(shape.mesh.num_face_vertices[f]);
 
-            auto v31 = shape.mesh.indices[i+2].vertex_index * 3 + 0;
-            auto v32 = shape.mesh.indices[i+2].vertex_index * 3 + 1;
-            auto v33 = shape.mesh.indices[i+2].vertex_index * 3 + 2;
+            // Loop over vertices in the face.
+            for (size_t v = 0; v < fv; v++) {
+                // access to vertex
+                tinyobj::index_t index = shape.mesh.indices[index_offset + v];
+                double vx = attrib.vertices[3*index.vertex_index+0];
+                double vy = attrib.vertices[3*index.vertex_index+1];
+                double vz = attrib.vertices[3*index.vertex_index+2];
+        
+                std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
 
-            std::cout << "v11: " << attrib.vertices[v11] << " v12: " << attrib.vertices[v12] << " v13: " << attrib.vertices[v13] << std::endl;
-            std::cout << "v21: " << attrib.vertices[v21] << " v22: " << attrib.vertices[v22] << " v23: " << attrib.vertices[v23] << std::endl;
-            std::cout << "v31: " << attrib.vertices[v31] << " v32: " << attrib.vertices[v32] << " v33: " << attrib.vertices[v33] << std::endl;
+                face_vertices.push_back(Eigen::Vector3d(vx, vy, vz));
+
+                // Check if `normal_index` is zero or positive. negative = no normal data
+                /*if (index.normal_index >= 0) {
+                double nx = attrib.normals[3*index.normal_index+0];
+                double ny = attrib.normals[3*index.normal_index+1];
+                double nz = attrib.normals[3*index.normal_index+2];
+                }
+        
+                // Check if `texcoord_index` is zero or positive. negative = no texcoord data
+                if (index.texcoord_index >= 0) {
+                double tx = attrib.texcoords[2*index.texcoord_index+0];
+                double ty = attrib.texcoords[2*index.texcoord_index+1];
+                }
+                */
+
+                // Optional: vertex colors
+                // double red   = attrib.colors[3*index.vertex_index)+0];
+                // double green = attrib.colors[3*index.vertex_index)+1];
+                // double blue  = attrib.colors[3*index.vertex_index)+2];
+
+                std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
+            }
 
             triangles.push_back(
                 Triangle(
-                    Eigen::Vector3d(attrib.vertices[v11], attrib.vertices[v12], attrib.vertices[v13]),
-                    Eigen::Vector3d(attrib.vertices[v21], attrib.vertices[v22], attrib.vertices[v23]),
-                    Eigen::Vector3d(attrib.vertices[v31], attrib.vertices[v32], attrib.vertices[v33])));
+                    face_vertices[0],
+                    face_vertices[1],
+                    face_vertices[2]));
+
+            index_offset += fv;
+        
+            // per-face material
+            shape.mesh.material_ids[f];
         }
     }
 
