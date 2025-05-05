@@ -1,2 +1,3 @@
 # Rendering
-Rendering Lab Course
+
+Rendering Lab Course - Implementation of a Raytracer

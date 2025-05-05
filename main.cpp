@@ -3,6 +3,15 @@
 //  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
 //
 
+// TODO: Implement Phong. (interesting more than one light source)
+// with phong shiny, diffuse, show examples for the report.
+// analysis of features in phong
+
+// TODO: make testnew.obj
+// TODO: acceleration datastructures (boxes, later bvh)
+
+// TODO: perfect mirrors in phong
+
 #include <Eigen/Dense>
 #include <iostream>
 #include <filesystem>
@@ -133,6 +142,9 @@ int main(int argc, char *argv[])
 
                 face_vertices.push_back(Eigen::Vector3d(vx, vy, vz));
 
+
+                std::cout << attrib.normals.size() << std::endl;
+
                 // Check if `normal_index` is zero or positive. negative = no normal data
                 /*if (index.normal_index >= 0) {
                 double nx = attrib.normals[3*index.normal_index+0];
@@ -191,7 +203,7 @@ int main(int argc, char *argv[])
             // Generate ray from camera
             Ray ray = cam.get_ray(u, v);
 
-            // Check for intersections
+            // Check for intersections with triangles
             double closest_t = std::numeric_limits<double>::max();
             bool hit_anything = false;
 
@@ -202,6 +214,8 @@ int main(int argc, char *argv[])
                     hit_anything = true;
                 }
             }
+
+            // TODO: intersection with boxes
 
             unsigned char color[3];
 
