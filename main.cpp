@@ -199,9 +199,11 @@ int main(int argc, char *argv[])
     std::cout << "Rendering image...\n";
 
     #pragma omp parallel for
-    for (int j = image_height - 1; j >= 0; --j) {
+    for (int j = image_height - 1; j >= 0; --j)
+    {
         #pragma omp parallel for
-        for (int i = 0; i < image_width; ++i) {
+        for (int i = 0; i < image_width; ++i)
+        {
             // Compute normalized coordinates
             double u = double(i) / (image_width - 1);
             double v = double(j) / (image_height - 1);
@@ -213,9 +215,11 @@ int main(int argc, char *argv[])
             double closest_t = std::numeric_limits<double>::max();
             bool hit_anything = false;
 
-            for (const auto& triangle : triangles) {
+            for (auto triangle : triangles)
+            {
                 double t;
-                if (triangle.hit(ray, t) && t < closest_t) {
+                if (triangle.hit(ray, t) && t < closest_t)
+                {
                     closest_t = t;
                     hit_anything = true;
                 }
@@ -226,11 +230,14 @@ int main(int argc, char *argv[])
             unsigned char color[3];
 
             // Output color based on hit
-            if (hit_anything) {
+            if (hit_anything)
+            {
                 color[0] = 255; // Red
                 color[1] = 0;   // Green
                 color[2] = 0;   // Blue
-            } else {
+            }
+            else
+            {
                 color[0] = 0; // Red
                 color[1] = 0;   // Green
                 color[2] = 0;   // Blue
