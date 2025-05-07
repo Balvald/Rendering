@@ -15,6 +15,7 @@ public:
     Eigen::Vector3d v2;
     Eigen::Vector3d v3;
 
+    /*
     bool hit(Ray& r, double& t) const
     {
         Eigen::Vector3d e1 = v2 - v1;
@@ -40,5 +41,43 @@ public:
         t = e2.dot(qvec) * inv_det;
 
         return true; // intersection found
-    }
+    };*/
+
+    inline bool hit(const Ray& r, double t_min, double t_max) const
+    {
+        constexpr double epsilon = FLT_EPSILON;
+
+        Eigen::Vector3d vertex0 = this->v1;
+        Eigen::Vector3d vertex1 = this->v2;
+        Eigen::Vector3d vertex2 = this->v3;
+        Eigen::Vector3d edge1, edge2, h, s, q;
+        double a, f, u, v;
+
+        edge1 = vertex1 - vertex0;
+        edge2 = vertex2 - vertex0;
+        h = r.direction().cross(edge2);
+        a = edge1.dot(h);
+        if (a > -epsilon && a < epsilon)
+            return false;    // This ray is parallel to this triangle.
+        f = 1.0 / a;
+        s = r.origin() - vertex0;
+        u = f * s.dot(h);
+        if (u < 0.0 || u > 1.0)
+            return false;
+        q = s.cross(edge1);
+        v = f * r.direction().dot(q);
+        if (v < 0.0 || u + v > 1.0)
+            return false;
+        // At this stage we can compute t to find out where the intersection point is on the line.
+        double t = f * edge2.dot(q);
+        if (t > epsilon) // ray intersection
+        {
+            Eigen::Vector3d outIntersectionPoint = r.origin() + r.direction() * t;
+            // rec.p = outIntersectionPoint;
+            //std::cout << outIntersectionPoint.x() << "," << outIntersectionPoint.y() << "," << outIntersectionPoint.z() << std::endl;
+            return true;
+        }
+        // This means that there is a line intersection but not a ray intersection.
+        return false;
+    };
 };

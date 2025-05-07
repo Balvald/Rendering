@@ -112,7 +112,6 @@ int main(int argc, char *argv[])
     load_model(path, &attrib, &shapes, &materials);
 
     // Loop over shapes
-    // #pragma omp parallel for
     for (auto shape : shapes)
     {
         // Loop over faces(polygon)
@@ -121,7 +120,6 @@ int main(int argc, char *argv[])
         std::cout << "shape.mesh.indices.size(): " << shape.mesh.indices.size() << std::endl;
         std::cout << "shape.mesh.num_face_vertices.size(): " << shape.mesh.num_face_vertices.size() << std::endl;
 
-        #pragma omp parallel for
         for (long long f = 0; f < shape.mesh.num_face_vertices.size(); f++)
         {
             // going to a single face
@@ -174,9 +172,10 @@ int main(int argc, char *argv[])
                 face_vertices[1],
                 face_vertices[2]);
 
-            // std::cout << "Triangle: (" << t.v1.x() << ", " << t.v1.y() << ", " << t.v1.z() << ")" << std::endl;
+            // std::cout << "Triangle: (" << t.v1.x() << ", " << t.v1.y() << ", " << t.v1.z() << ")," << std::endl;
+            // std::cout << "(" << t.v2.x() << ", " << t.v2.y() << ", " << t.v2.z() << ")," << std::endl;
+            // std::cout << "(" << t.v3.x() << ", " << t.v3.y() << ", " << t.v3.z() << ")" << std::endl;
 
-            #pragma omp critical
             triangles.push_back(t);
 
             index_offset += fv;
@@ -189,12 +188,14 @@ int main(int argc, char *argv[])
     std::cout << "Number of triangles: " << triangles.size() << "\n";
 
     // print all triangles
+    /*
     for (auto triangle : triangles)
     {
         std::cout << "Triangle: (" << triangle.v1.x() << ", " << triangle.v1.y() << ", " << triangle.v1.z() << ")," << std::endl;
         std::cout << "(" << triangle.v2.x() << ", " << triangle.v2.y() << ", " << triangle.v2.z() << ")," << std::endl;
         std::cout << "(" << triangle.v3.x() << ", " << triangle.v3.y() << ", " << triangle.v3.z() << ")" << std::endl;
     }
+    */
 
     // Camera
     Camera cam = Camera(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
@@ -230,7 +231,7 @@ int main(int argc, char *argv[])
             for (Triangle triangle : triangles)
             {
                 double t;
-                if (triangle.hit(ray, t) && t < closest_t)
+                if (triangle.hit(ray, 0.001, std::numeric_limits<double>::max()))
                 {
                     closest_t = t;
                     hit_anything = true;
@@ -251,8 +252,8 @@ int main(int argc, char *argv[])
             else
             {
                 color[0] = 0; // Red
-                color[1] = 0;   // Green
-                color[2] = 0;   // Blue
+                color[1] = 0; // Green
+                color[2] = 0; // Blue
             }
 
             //#pragma omp critical
