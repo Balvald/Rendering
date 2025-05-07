@@ -3,6 +3,8 @@
 //  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
 //
 
+
+// TODO: make several triangles in the scene
 // TODO: Implement Phong. (interesting more than one light source)
 // with phong shiny, diffuse, show examples for the report.
 // analysis of features in phong
@@ -184,6 +186,16 @@ int main(int argc, char *argv[])
         }
     }
 
+    std::cout << "Number of triangles: " << triangles.size() << "\n";
+
+    // print all triangles
+    for (auto triangle : triangles)
+    {
+        std::cout << "Triangle: (" << triangle.v1.x() << ", " << triangle.v1.y() << ", " << triangle.v1.z() << ")," << std::endl;
+        std::cout << "(" << triangle.v2.x() << ", " << triangle.v2.y() << ", " << triangle.v2.z() << ")," << std::endl;
+        std::cout << "(" << triangle.v3.x() << ", " << triangle.v3.y() << ", " << triangle.v3.z() << ")" << std::endl;
+    }
+
     // Camera
     Camera cam = Camera(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
 
@@ -215,7 +227,7 @@ int main(int argc, char *argv[])
             double closest_t = std::numeric_limits<double>::max();
             bool hit_anything = false;
 
-            for (auto triangle : triangles)
+            for (Triangle triangle : triangles)
             {
                 double t;
                 if (triangle.hit(ray, t) && t < closest_t)
