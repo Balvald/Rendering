@@ -43,8 +43,18 @@ public:
         return true; // intersection found
     };*/
 
-    inline bool hit(const Ray& r, double t_min, double t_max) const
+    Eigen::Vector3d normal() const
     {
+        Eigen::Vector3d edge1 = v2 - v1;
+        Eigen::Vector3d edge2 = v3 - v1;
+        return edge1.cross(edge2).normalized();
+    }
+
+    inline bool hit(const Ray& r, Eigen::Vector3d& out, double& t) const
+    {
+        double t_min = 0.001;
+        double t_max = std::numeric_limits<double>::max();
+
         constexpr double epsilon = FLT_EPSILON;
 
         Eigen::Vector3d vertex0 = this->v1;
@@ -69,7 +79,7 @@ public:
         if (v < 0.0 || u + v > 1.0)
             return false;
         // At this stage we can compute t to find out where the intersection point is on the line.
-        double t = f * edge2.dot(q);
+        t = f * edge2.dot(q);
         if (t > epsilon) // ray intersection
         {
             Eigen::Vector3d outIntersectionPoint = r.origin() + r.direction() * t;

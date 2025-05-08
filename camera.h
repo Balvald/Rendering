@@ -10,7 +10,7 @@
 class Camera
 {
 public:
-    Camera(Eigen::Vector3d lookfrom = Eigen::Vector3d(0, 0, 0), Eigen::Vector3d lookat = Eigen::Vector3d(0, 0, -1))
+    Camera(Eigen::Vector3d lookfrom = Eigen::Vector3d(0, 0, 0))
     {
         viewport_height = 2.0;
         aspect_ratio = 16.0 / 9.0;

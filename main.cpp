@@ -3,7 +3,6 @@
 //  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
 //
 
-
 // TODO: make several triangles in the scene
 // TODO: Implement Phong. (interesting more than one light source)
 // with phong shiny, diffuse, show examples for the report.
@@ -11,8 +10,6 @@
 
 // TODO: make testnew.obj
 // TODO: acceleration datastructures (boxes, later bvh)
-
-// TODO: perfect mirrors in phong
 
 #include <Eigen/Dense>
 #include <iostream>
@@ -96,7 +93,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\cube.obj");
+    std::string path = std::string(".\\models\\fouranimals.obj");
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -198,18 +195,21 @@ int main(int argc, char *argv[])
     */
 
     // Camera
-    Camera cam = Camera(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 1));
+    Camera cam = Camera(Eigen::Vector3d(0, 0, 0));
 
     std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
 
     // Image
-    int image_width = 1920;
+    int image_width = 128;
     int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
 
     cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
 
     // cast rays and check for intersections
     std::cout << "Rendering image...\n";
+
+    long long finished_pixels = 0;
+    long long total_pixels = image_width * image_height;
 
     #pragma omp parallel for
     for (int j = image_height - 1; j >= 0; --j)
@@ -228,26 +228,39 @@ int main(int argc, char *argv[])
             double closest_t = std::numeric_limits<double>::max();
             bool hit_anything = false;
 
+            Triangle closest_triangle;
+
             for (Triangle triangle : triangles)
             {
+                Eigen::Vector3d intersection_point;
                 double t;
-                if (triangle.hit(ray, 0.001, std::numeric_limits<double>::max()))
+
+                if(triangle.hit(ray, intersection_point, t))
                 {
-                    closest_t = t;
-                    hit_anything = true;
+                    if (t < closest_t)
+                    {
+                        closest_t = t;
+                        closest_triangle = triangle;
+                        hit_anything = true;
+                    }
                 }
             }
 
-            // TODO: intersection with boxes
+            // TODO: intersection with bounding boxes
 
             unsigned char color[3];
 
             // Output color based on hit
+            // Make color dependent on normal of the triangle
             if (hit_anything)
             {
-                color[0] = 255; // Red
-                color[1] = 0;   // Green
-                color[2] = 0;   // Blue
+                // use the normal of the triangle to determine color
+                color[0] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+                color[1] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+                color[2] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+
+                // print color
+                // std::cout << "Color: (" << (int)color[0] << ", " << (int)color[1] << ", " << (int)color[2] << ")" << std::endl;
             }
             else
             {
@@ -256,13 +269,21 @@ int main(int argc, char *argv[])
                 color[2] = 0; // Blue
             }
 
-            //#pragma omp critical
             image.draw_point(i, image_height - j, color);
+
+            #pragma omp atomic
+            finished_pixels++;
+
+            // print progress
+
+            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")";
+            std::cout.flush();
+
         }
     }
 
     std::stringstream concat;
-    concat << "render-" << "-" << image_width << "x" << image_height << ".bmp";
+    concat << "render-" << "normalcoloring" << "-" << image_width << "x" << image_height << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
