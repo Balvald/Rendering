@@ -83,7 +83,6 @@ public:
         if (t > epsilon) // ray intersection
         {
             Eigen::Vector3d outIntersectionPoint = r.origin() + r.direction() * t;
-            // rec.p = outIntersectionPoint;
             //std::cout << outIntersectionPoint.x() << "," << outIntersectionPoint.y() << "," << outIntersectionPoint.z() << std::endl;
             return true;
         }
