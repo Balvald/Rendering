@@ -194,6 +194,16 @@ int main(int argc, char *argv[])
     }
     */
 
+    // Define light and material properties (add before the render loop)
+    Eigen::Vector3d light_pos(10, 10, 10);
+    Eigen::Vector3d light_color(1, 1, 1); // white light
+    Eigen::Vector3d ambient_color(0.1, 0.1, 0.1);
+
+    double ka = 0.1; // ambient coefficient
+    double kd = 0.7; // diffuse coefficient
+    double ks = 0.2; // specular coefficient
+    double schininess = 32.0; // lol thats a good typo, Gonna keep it for now
+
     // Camera
     Camera cam = Camera(Eigen::Vector3d(0, 0, 0));
 
@@ -254,10 +264,45 @@ int main(int argc, char *argv[])
             // Make color dependent on normal of the triangle
             if (hit_anything)
             {
+
+                // Intersection point
+                Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
+
+                // Surface normal
+                Eigen::Vector3d N = closest_triangle.normal();
+
+                // Light direction
+                Eigen::Vector3d L = (light_pos - intersection_point).normalized();
+
+                // View direction
+                Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized();
+
+                // Reflection direction
+                Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();
+
+                // Ambient
+                Eigen::Vector3d ambient = ka * ambient_color;
+
+                // Diffuse
+                double diff = std::max(N.dot(L), 0.0);
+                Eigen::Vector3d diffuse = kd * diff * light_color;
+
+                // Specular
+                double spec = std::pow(std::max(R.dot(V), 0.0), schininess);
+                Eigen::Vector3d specular = ks * spec * light_color;
+
+                // Combine
+                Eigen::Vector3d color_vec = ambient + diffuse + specular;
+                color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
+
+                color[0] = static_cast<unsigned char>(255 * color_vec.x());
+                color[1] = static_cast<unsigned char>(255 * color_vec.y());
+                color[2] = static_cast<unsigned char>(255 * color_vec.z());
+
                 // use the normal of the triangle to determine color
-                color[0] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
-                color[1] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
-                color[2] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+                //color[0] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+                //color[1] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+                //color[2] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
 
                 // print color
                 // std::cout << "Color: (" << (int)color[0] << ", " << (int)color[1] << ", " << (int)color[2] << ")" << std::endl;
@@ -274,16 +319,13 @@ int main(int argc, char *argv[])
             #pragma omp atomic
             finished_pixels++;
 
-            // print progress
-
-            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")";
-            std::cout.flush();
+            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << "                                     " <<std::flush;
 
         }
     }
 
     std::stringstream concat;
-    concat << "render-" << "normalcoloring" << "-" << image_width << "x" << image_height << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
