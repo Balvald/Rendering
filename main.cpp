@@ -77,6 +77,19 @@ void load_model(std::string model_path,
     }
 }
 
+Eigen::Vector3d phong(
+    const Eigen::Vector3d& V, // View direction
+    const Eigen::Vector3d& R, // Reflection direction
+    const Eigen::Vector3d& light_color,
+    const double schininess)
+{
+
+    double diff = std::max(std::pow(V.dot(R), schininess), 0.0);
+    Eigen::Vector3d diffuse = diff * light_color;
+
+    return diffuse;
+}
+
 int main(int argc, char *argv[])
 {
     int rank = 0, size = 1;
@@ -93,7 +106,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\fouranimals.obj");
+    std::string path = std::string(".\\models\\cube.obj");
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -195,14 +208,10 @@ int main(int argc, char *argv[])
     */
 
     // Define light and material properties (add before the render loop)
-    Eigen::Vector3d light_pos(10, 10, 10);
+    Eigen::Vector3d light_pos(5, 10, 10);
     Eigen::Vector3d light_color(1, 1, 1); // white light
-    Eigen::Vector3d ambient_color(0.1, 0.1, 0.1);
 
-    double ka = 0.1; // ambient coefficient
-    double kd = 0.7; // diffuse coefficient
-    double ks = 0.2; // specular coefficient
-    double schininess = 32.0; // lol thats a good typo, Gonna keep it for now
+    double schininess = 10.0; // lol thats a good typo, Gonna keep it for now
 
     // Camera
     Camera cam = Camera(Eigen::Vector3d(0, 0, 0));
@@ -210,7 +219,7 @@ int main(int argc, char *argv[])
     std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
 
     // Image
-    int image_width = 128;
+    int image_width = 800;
     int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
 
     cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
@@ -272,27 +281,16 @@ int main(int argc, char *argv[])
                 Eigen::Vector3d N = closest_triangle.normal();
 
                 // Light direction
-                Eigen::Vector3d L = (light_pos - intersection_point).normalized();
+                Eigen::Vector3d L = (light_pos - intersection_point).normalized(); // L_light
 
                 // View direction
-                Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized();
+                Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized(); // L_cam
 
                 // Reflection direction
-                Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();
-
-                // Ambient
-                Eigen::Vector3d ambient = ka * ambient_color;
-
-                // Diffuse
-                double diff = std::max(N.dot(L), 0.0);
-                Eigen::Vector3d diffuse = kd * diff * light_color;
-
-                // Specular
-                double spec = std::pow(std::max(R.dot(V), 0.0), schininess);
-                Eigen::Vector3d specular = ks * spec * light_color;
+                Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();  // L_refl
 
                 // Combine
-                Eigen::Vector3d color_vec = ambient + diffuse + specular;
+                Eigen::Vector3d color_vec = phong(V, R, light_color, schininess); //ambient + diffuse + specular;
                 color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
 
                 color[0] = static_cast<unsigned char>(255 * color_vec.x());
@@ -319,7 +317,7 @@ int main(int argc, char *argv[])
             #pragma omp atomic
             finished_pixels++;
 
-            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << "                                     " <<std::flush;
+            // std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
 
         }
     }
