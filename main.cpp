@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\cube.obj");
+    std::string path = std::string(".\\models\\uvsphere.obj");
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
