@@ -77,18 +77,34 @@ void load_model(std::string model_path,
     }
 }
 
-Eigen::Vector3d phong(
+Eigen::Vector3d phong_diffuse(const Eigen::Vector3d& V,
+                              const Eigen::Vector3d& R,
+                              const Eigen::Vector3d& N,
+                              const Eigen::Vector3d& L, 
+                              const Eigen::Vector3d& light_color)
+{
+    return std::max(N.dot(L), 0.0) * light_color;
+}
+
+Eigen::Vector3d phong_specular(
     const Eigen::Vector3d& V, // View direction
     const Eigen::Vector3d& R, // Reflection direction
     const Eigen::Vector3d& light_color,
     const double schininess)
 {
-
-    double diff = std::max(std::pow(V.dot(R), schininess), 0.0);
-    Eigen::Vector3d diffuse = diff * light_color;
-
-    return diffuse;
+    return std::max(std::pow(V.dot(R), schininess), 0.0) * light_color;
 }
+
+Eigen::Vector3d phong(const Eigen::Vector3d& V,
+                      const Eigen::Vector3d& R,
+                      const Eigen::Vector3d& N,
+                      const Eigen::Vector3d& L,
+                      const Eigen::Vector3d& light_color,
+                      const double schininess)
+{
+    return (phong_diffuse(V, R, N, L, light_color) + phong_specular(V, R, light_color, schininess));
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -106,7 +122,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\uvsphere.obj");
+    std::string path = std::string(".\\models\\icosphere.obj");
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -219,7 +235,7 @@ int main(int argc, char *argv[])
     std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
 
     // Image
-    int image_width = 1920;
+    int image_width = 200;
     int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
 
     cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
@@ -290,7 +306,7 @@ int main(int argc, char *argv[])
                 Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();  // L_refl
 
                 // Combine
-                Eigen::Vector3d color_vec = phong(V, R, light_color, schininess); //ambient + diffuse + specular;
+                Eigen::Vector3d color_vec = phong(V, R, N, L, light_color, schininess); //ambient + diffuse + specular;
                 color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
 
                 color[0] = static_cast<unsigned char>(255 * color_vec.x());
@@ -317,7 +333,7 @@ int main(int argc, char *argv[])
             #pragma omp atomic
             finished_pixels++;
 
-            // std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
+            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
 
         }
     }
