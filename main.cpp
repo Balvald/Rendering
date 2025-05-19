@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
     */
 
     // Define light and material properties (add before the render loop)
-    Eigen::Vector3d light_pos(5, 10, 10);
+    Eigen::Vector3d light_pos(0, 0, 0);
     Eigen::Vector3d light_color(1, 1, 1); // white light
 
     double schininess = 10.0; // lol thats a good typo, Gonna keep it for now
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
     std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
 
     // Image
-    int image_width = 800;
+    int image_width = 1920;
     int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
 
     cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);

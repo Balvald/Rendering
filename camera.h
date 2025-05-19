@@ -21,6 +21,7 @@ public:
         horizontal = Eigen::Vector3d(viewport_width, 0.0, 0.0);
         vertical = Eigen::Vector3d(0.0, viewport_height, 0.0);
         lower_left_corner = origin - horizontal * 0.5 - vertical * 0.5 - Eigen::Vector3d(0, 0, focal_length);
+        
     }
 
     Camera()
