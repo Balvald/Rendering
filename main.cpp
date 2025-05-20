@@ -145,7 +145,8 @@ int main(int argc, char *argv[])
     // args: camera_aspect_ratio (is overwritten if image_width AND image_height are given) --cam-ar
 
     // Define light and material properties (add before the render loop)
-    Eigen::Vector3d light_pos(0, 0, 0);
+    // (x, y, z)  (assuming x left to right, y up to down, z back to front)
+    Eigen::Vector3d light_pos(0, 5, 0);
     Eigen::Vector3d light_color(1, 1, 1); // white light
 
     double schininess = 32.0; // :D
@@ -410,6 +411,9 @@ int main(int argc, char *argv[])
 
                 // Combine
                 Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, light_color, schininess, ks, kd, ka);
+                
+                std::cout << "Phong color: (" << color_vec.x() << ", " << color_vec.y() << ", " << color_vec.z() << ")" << std::endl;
+                
                 color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
 
                 color[0] = static_cast<unsigned char>(255 * color_vec.x());
@@ -442,7 +446,7 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32" << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32-movey" << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
