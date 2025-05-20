@@ -108,6 +108,9 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
 
 int main(int argc, char *argv[])
 {
+
+    // Check if the program is run with MPI
+
     int rank = 0, size = 1;
 
 #ifdef USE_MPI
@@ -122,7 +125,113 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\icosphere.obj");
+    std::string path = std::string(".\\models\\uvsphere.obj");
+
+    // Input handling
+    // args: image_width, (image_height) -w -h
+    // args: model_path -f
+    // args: light_pos -lp
+    // args: light_color -lc
+    // args: camera_pos --cam-pos
+    // args: camera_lookat --cam-lookat
+    // args: camera_up --cam-up
+    // args: camera_fov --cam-fov
+    // args: camera_aspect_ratio (is overwritten if image_width AND image_height are given) --cam-ar
+
+    // Define light and material properties (add before the render loop)
+    Eigen::Vector3d light_pos(0, 0, 0);
+    Eigen::Vector3d light_color(1, 1, 1); // white light
+
+    double schininess = 32.0; // :D
+
+    // Camera
+    Camera cam = Camera(Eigen::Vector3d(0, 0, 0));
+
+    std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
+
+    // Image
+    int image_width = 1920;
+    int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
+
+    // Handle command line arguments
+
+    bool image_width_set = false;
+    bool image_height_set = false;
+
+    for (int i = 1; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+
+        if (arg == "-w" && i + 1 < argc)
+        {
+            image_width = std::stoi(argv[++i]);
+            // image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
+        }
+        else if (arg == "-h" && i + 1 < argc)
+        {
+            image_height = std::stoi(argv[++i]);
+            // image_width = static_cast<int>(image_height * cam.get_aspect_ratio());
+        }
+        else if (arg == "-f" && i + 1 < argc)
+        {
+            path = argv[++i];
+        }
+        else if (arg == "-lp" && i + 1 < argc)
+        {
+            light_pos.x() = std::stod(argv[++i]);
+            light_pos.y() = std::stod(argv[++i]);
+            light_pos.z() = std::stod(argv[++i]);
+        }
+        else if (arg == "-lc" && i + 1 < argc)
+        {
+            light_color.x() = std::stod(argv[++i]);
+            light_color.y() = std::stod(argv[++i]);
+            light_color.z() = std::stod(argv[++i]);
+        }
+        else if (arg == "--cam-pos" && i + 1 < argc)
+        {
+            cam.get_origin().x() = std::stod(argv[++i]);
+            cam.get_origin().y() = std::stod(argv[++i]);
+            cam.get_origin().z() = std::stod(argv[++i]);
+        }
+        else if (arg == "--cam-lookat" && i + 1 < argc)
+        {
+            cam.get_lower_left_corner().x() = std::stod(argv[++i]);
+            cam.get_lower_left_corner().y() = std::stod(argv[++i]);
+            cam.get_lower_left_corner().z() = std::stod(argv[++i]);
+        }
+        else if (arg == "--cam-up" && i + 1 < argc)
+        {
+            cam.get_vertical().x() = std::stod(argv[++i]);
+            cam.get_vertical().y() = std::stod(argv[++i]);
+            cam.get_vertical().z() = std::stod(argv[++i]);
+        }
+        else if (arg == "--cam-fov" && i + 1 < argc)
+        {
+            cam.set_focal_length(std::stod(argv[++i]));
+        }
+        else if (arg == "--cam-ar" && i + 1 < argc)
+        {
+            if (image_width_set && image_height_set)
+            {
+                std::cerr << "Error: Cannot set aspect ratio if both image width and height are set." << std::endl;
+                return 1;
+            }
+            cam.set_aspect_ratio(std::stod(argv[++i]));
+            if (image_width_set)
+            {
+                image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
+            }
+            else if (image_height_set)
+            {
+                image_width = static_cast<int>(image_height * cam.get_aspect_ratio());
+            }
+        }
+        image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
+    }
+
+
+    cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
 
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -132,7 +241,6 @@ int main(int argc, char *argv[])
 
     std::vector<Eigen::Vector3d> vertices = {};
     std::vector<Eigen::Vector3i> faces = {};
-
     std::vector<Triangle> triangles = {};
 
     load_model(path, &attrib, &shapes, &materials);
@@ -223,22 +331,7 @@ int main(int argc, char *argv[])
     }
     */
 
-    // Define light and material properties (add before the render loop)
-    Eigen::Vector3d light_pos(0, 0, 0);
-    Eigen::Vector3d light_color(1, 1, 1); // white light
 
-    double schininess = 10.0; // lol thats a good typo, Gonna keep it for now
-
-    // Camera
-    Camera cam = Camera(Eigen::Vector3d(0, 0, 0));
-
-    std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
-
-    // Image
-    int image_width = 200;
-    int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
-
-    cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
 
     // cast rays and check for intersections
     std::cout << "Rendering image...\n";
@@ -306,7 +399,7 @@ int main(int argc, char *argv[])
                 Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();  // L_refl
 
                 // Combine
-                Eigen::Vector3d color_vec = phong(V, R, N, L, light_color, schininess); //ambient + diffuse + specular;
+                Eigen::Vector3d color_vec = phong(V, R, N, L, light_color, schininess); //diffuse + specular;
                 color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
 
                 color[0] = static_cast<unsigned char>(255 * color_vec.x());
@@ -333,7 +426,7 @@ int main(int argc, char *argv[])
             #pragma omp atomic
             finished_pixels++;
 
-            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
+            // std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
 
         }
     }

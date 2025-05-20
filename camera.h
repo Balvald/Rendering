@@ -43,9 +43,11 @@ public:
     }
 
     double get_aspect_ratio() const { return aspect_ratio; }
+    void set_aspect_ratio(double aspect_ratio) { this->aspect_ratio = aspect_ratio; }
     double get_viewport_width() const { return viewport_width; }
     double get_viewport_height() const { return viewport_height; }
     double get_focal_length() const { return focal_length; }
+    void set_focal_length(double focal_length) { this->focal_length = focal_length; }
 
     Eigen::Vector3d get_origin() const { return origin; }
     Eigen::Vector3d get_lower_left_corner() const { return lower_left_corner; }
