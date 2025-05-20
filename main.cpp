@@ -102,7 +102,7 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
                       const Eigen::Vector3d& light_color,
                       const double schininess)
 {
-    return (phong_diffuse(V, R, N, L, light_color) + phong_specular(V, R, light_color, schininess));
+    return (phong_diffuse(V, R, N, L, light_color));// + phong_specular(V, R, light_color, schininess));
 }
 
 
@@ -432,7 +432,7 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "uv-nos" << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
