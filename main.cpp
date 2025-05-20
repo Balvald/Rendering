@@ -77,32 +77,38 @@ void load_model(std::string model_path,
     }
 }
 
-Eigen::Vector3d phong_diffuse(const Eigen::Vector3d& V,
-                              const Eigen::Vector3d& R,
-                              const Eigen::Vector3d& N,
-                              const Eigen::Vector3d& L, 
-                              const Eigen::Vector3d& light_color)
-{
-    return std::max(N.dot(L), 0.0) * light_color;
-}
-
-Eigen::Vector3d phong_specular(
-    const Eigen::Vector3d& V, // View direction
-    const Eigen::Vector3d& R, // Reflection direction
-    const Eigen::Vector3d& light_color,
-    const double schininess)
-{
-    return std::max(std::pow(V.dot(R), schininess), 0.0) * light_color;
-}
-
 Eigen::Vector3d phong(const Eigen::Vector3d& V,
-                      const Eigen::Vector3d& R,
                       const Eigen::Vector3d& N,
                       const Eigen::Vector3d& L,
-                      const Eigen::Vector3d& light_color,
-                      const double schininess)
+                      const Eigen::Vector3d& is,
+                      const Eigen::Vector3d& id,
+                      const Eigen::Vector3d& ia,
+                      const double schininess,
+                      const double ks,
+                      const double kd,
+                      const double ka)
 {
-    return (phong_diffuse(V, R, N, L, light_color));// + phong_specular(V, R, light_color, schininess));
+    // This is the Phong reflection model
+    // under the assumption that we have a single point light source
+
+    // ks specular reflection constant
+    // kd diffuse reflection constant
+    // ka ambient reflection constant
+
+    // schininess is the shininess constant for the material
+
+    // is intensity of specular component
+    // id intensity of diffuse component
+    // ia intensity of ambient component
+
+    // L_m is the direction vector from the point on the surface toward each light source. (we currently only have one)
+    // N is the normal at this point on the surface
+    // R_m is the direction that a perfectly reflected ray of light would take.
+    // V is the direction pointing towards the viewer
+
+    Eigen::Vector3d R = 2.0 * N.dot(L) * N - L; // reflection direction
+
+    return (ka * ia) + (kd * (N.dot(L)) * id) + (ks * std::pow(V.dot(R), schininess) * is);
 }
 
 
@@ -398,8 +404,12 @@ int main(int argc, char *argv[])
                 // Reflection direction
                 Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();  // L_refl
 
+                double ks = 0.7;
+                double kd = 0.5;
+                double ka = 0.1; // ambient light
+
                 // Combine
-                Eigen::Vector3d color_vec = phong(V, R, N, L, light_color, schininess); //diffuse + specular;
+                Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, light_color, schininess, ks, kd, ka);
                 color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
 
                 color[0] = static_cast<unsigned char>(255 * color_vec.x());
@@ -432,7 +442,7 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "uv-nos" << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32" << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
