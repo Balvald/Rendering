@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\uvsphere.obj");
+    std::string path = std::string(".\\models\\uvsphere-weight-norm.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -146,8 +146,9 @@ int main(int argc, char *argv[])
 
     // Define light and material properties (add before the render loop)
     // (x, y, z)  (assuming x left (-) to right (+), y up (+) to down (-), z back to front)
-    Eigen::Vector3d light_pos(5, 0, 0);
+    Eigen::Vector3d light_pos(0, 0, 0);
     Eigen::Vector3d light_color(1, 1, 1); // white light
+    Eigen::Vector3d ambient_light_color(0.1, 0.1, 0.1); // ambient light color
 
     double schininess = 32.0; // :D
 
@@ -270,6 +271,7 @@ int main(int argc, char *argv[])
             // std::cout << "fv: " << fv << std::endl;
             // create vector for the face
             std::vector<Eigen::Vector3d> face_vertices = std::vector<Eigen::Vector3d>();
+            std::vector<Eigen::Vector3d> face_normals = std::vector<Eigen::Vector3d>();
 
             // Loop over vertices in the face.
             for (size_t v = 0; v < fv; v++)
@@ -285,16 +287,20 @@ int main(int argc, char *argv[])
                 // std::cout << attrib.normals.size() << std::endl;
 
                 // Check if `normal_index` is zero or positive. negative = no normal data
-                /*if (index.normal_index >= 0) {
-                double nx = attrib.normals[3*index.normal_index+0];
-                double ny = attrib.normals[3*index.normal_index+1];
-                double nz = attrib.normals[3*index.normal_index+2];
+                if (index.normal_index >= 0)
+                {
+                    double nx = attrib.normals[3*index.normal_index+0];
+                    double ny = attrib.normals[3*index.normal_index+1];
+                    double nz = attrib.normals[3*index.normal_index+2];
+                    face_normals.push_back(Eigen::Vector3d(nx, ny, nz));
                 }
         
+                /*
                 // Check if `texcoord_index` is zero or positive. negative = no texcoord data
-                if (index.texcoord_index >= 0) {
-                double tx = attrib.texcoords[2*index.texcoord_index+0];
-                double ty = attrib.texcoords[2*index.texcoord_index+1];
+                if (index.texcoord_index >= 0)
+                {
+                    double tx = attrib.texcoords[2*index.texcoord_index+0];
+                    double ty = attrib.texcoords[2*index.texcoord_index+1];
                 }
                 */
 
@@ -394,27 +400,35 @@ int main(int argc, char *argv[])
                 Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
 
                 // Surface normal
-                Eigen::Vector3d N = closest_triangle.normal();
+                Eigen::Vector3d N = closest_triangle.get_normal(); // N
 
                 // Light direction
-                Eigen::Vector3d L = (light_pos - intersection_point).normalized(); // L_light
+                Eigen::Vector3d L = (light_pos - intersection_point); // L_light
 
                 // View direction
-                Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized(); // L_cam
+                Eigen::Vector3d V = (cam.get_origin() - intersection_point); // L_cam
 
                 // Reflection direction
-                Eigen::Vector3d R = (2.0 * N.dot(L) * N - L).normalized();  // L_refl
+                Eigen::Vector3d R = (2.0 * ((N.dot(L)) * N) - L).normalized();  // L_refl
 
                 double ks = 0.7;
                 double kd = 0.5;
-                double ka = 0.1; // ambient light
+                double ka = 0.01; // ambient light
 
                 // Combine
-                Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, light_color, schininess, ks, kd, ka);
+                Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, ambient_light_color, schininess, ks, kd, ka);
                 
                 std::cout << "Phong color: (" << color_vec.x() << ", " << color_vec.y() << ", " << color_vec.z() << ")" << std::endl;
                 
                 color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
+
+                // apply tone mapping
+                color_vec.x() = color_vec.x() / (1.0 + color_vec.x());
+                color_vec.y() = color_vec.y() / (1.0 + color_vec.y());
+                color_vec.z() = color_vec.z() / (1.0 + color_vec.z());
+
+                // apply gamma correction
+                // color_vec = color_vec.cwiseSqrt();
 
                 color[0] = static_cast<unsigned char>(255 * color_vec.x());
                 color[1] = static_cast<unsigned char>(255 * color_vec.y());

@@ -11,39 +11,23 @@ public:
 
     Triangle(Eigen::Vector3d x1, Eigen::Vector3d x2, Eigen::Vector3d x3) : v1(x1), v2(x2), v3(x3) {}
 
+    Triangle(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, const Eigen::Vector3d& x3,
+             const Eigen::Vector3d& n1, const Eigen::Vector3d& n2, const Eigen::Vector3d& n3) : v1(x1), v2(x2), v3(x3), normal1(n1), normal2(n2), normal3(n3)
+    {
+        predefined_normals = true;
+    }
+
     Eigen::Vector3d v1;
     Eigen::Vector3d v2;
     Eigen::Vector3d v3;
 
-    /*
-    bool hit(Ray& r, double& t) const
-    {
-        Eigen::Vector3d e1 = v2 - v1;
-        Eigen::Vector3d e2 = v3 - v1;
+    // make use of predefined normals if we have them
+    bool predefined_normals = false;
+    Eigen::Vector3d normal1;
+    Eigen::Vector3d normal2;
+    Eigen::Vector3d normal3;
 
-        Eigen::Vector3d pvec = r.direction().cross(e2);
-        double det = e1.dot(pvec);
-
-        if (det < 0.00001) return false; // no intersection
-
-        double inv_det = 1.0 / det;
-
-        Eigen::Vector3d tvec = r.origin() - v1;
-        double u = tvec.dot(pvec) * inv_det;
-
-        if (u < 0.0 || u > 1.0) return false; // no intersection
-
-        Eigen::Vector3d qvec = tvec.cross(e1);
-        double v = r.direction().dot(qvec) * inv_det;
-
-        if (v < 0.0 || u + v > 1.0) return false; // no intersection
-
-        t = e2.dot(qvec) * inv_det;
-
-        return true; // intersection found
-    };*/
-
-    Eigen::Vector3d normal() const
+    Eigen::Vector3d get_normal() const
     {
         Eigen::Vector3d edge1 = v2 - v1;
         Eigen::Vector3d edge2 = v3 - v1;
