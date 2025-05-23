@@ -91,11 +91,13 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
     // This is the Phong reflection model
     // under the assumption that we have a single point light source
 
+    // shorthand for the reflection model based on the Phong reflection model wikipedia article: https://en.wikipedia.org/wiki/Phong_reflection_model
+
     // ks specular reflection constant
     // kd diffuse reflection constant
     // ka ambient reflection constant
 
-    // schininess is the shininess constant for the material
+    // schininess is the shininess constant (alpha) for the material
 
     // is intensity of specular component
     // id intensity of diffuse component
@@ -131,7 +133,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\uvsphere-high-res.obj");
+    std::string path = std::string(".\\models\\fouranimals.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -251,6 +253,8 @@ int main(int argc, char *argv[])
     std::vector<Eigen::Vector3i> faces = {};
     std::vector<Triangle> triangles = {};
 
+    std::vector<std::tuple<Eigen::Vector3d, Eigen::Vector3d>> BoundingBoxes = {};
+
     load_model(path, &attrib, &shapes, &materials);
 
     // Loop over shapes
@@ -317,7 +321,10 @@ int main(int argc, char *argv[])
             Triangle t = Triangle(
                 face_vertices[0],
                 face_vertices[1],
-                face_vertices[2]);
+                face_vertices[2],
+                face_normals[0],
+                face_normals[1],
+                face_normals[2]);
 
             // std::cout << "Triangle: (" << t.v1.x() << ", " << t.v1.y() << ", " << t.v1.z() << ")," << std::endl;
             // std::cout << "(" << t.v2.x() << ", " << t.v2.y() << ", " << t.v2.z() << ")," << std::endl;
@@ -330,6 +337,39 @@ int main(int argc, char *argv[])
             // per-face material
             // shape.mesh.material_ids[f];
         }
+
+        // Build bounding box around the shape
+        Eigen::Vector3d min = Eigen::Vector3d::Zero();
+        Eigen::Vector3d max = Eigen::Vector3d::Zero();
+
+        for (size_t i = 0; i < shape.mesh.indices.size(); i++)
+        {
+            tinyobj::index_t index = shape.mesh.indices[i];
+            double vx = attrib.vertices[3*index.vertex_index+0];
+            double vy = attrib.vertices[3*index.vertex_index+1];
+            double vz = attrib.vertices[3*index.vertex_index+2];
+
+            if (i == 0)
+            {
+                min = Eigen::Vector3d(vx, vy, vz);
+                max = Eigen::Vector3d(vx, vy, vz);
+            }
+            else
+            {
+                min.x() = std::min(min.x(), vx);
+                min.y() = std::min(min.y(), vy);
+                min.z() = std::min(min.z(), vz);
+
+                max.x() = std::max(max.x(), vx);
+                max.y() = std::max(max.y(), vy);
+                max.z() = std::max(max.z(), vz);
+            }
+        }
+
+        std::cout << "Bounding box: (" << min.x() << ", " << min.y() << ", " << min.z() << "), (" << max.x() << ", " << max.y() << ", " << max.z() << ")" << std::endl;
+
+        // add the bounding box to the list
+        BoundingBoxes.push_back(std::make_tuple(min, max));
     }
 
     std::cout << "Number of triangles: " << triangles.size() << "\n";
@@ -399,7 +439,13 @@ int main(int argc, char *argv[])
                 Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
 
                 // Surface normal
-                Eigen::Vector3d N = closest_triangle.get_normal().normalized(); // N
+                // Eigen::Vector3d N = closest_triangle.get_normal().normalized(); // N
+                // Surface normal at the intersection point
+                // get the barycentric coordinates
+                double u_trig, v_trig;
+                closest_triangle.get_barycentric_coordinates(intersection_point, u_trig, v_trig);
+
+                Eigen::Vector3d N = closest_triangle.get_normal(u_trig, v_trig).normalized();
 
                 // Light direction
                 Eigen::Vector3d L = (light_pos - intersection_point).normalized(); // L_light
@@ -459,7 +505,7 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32-weightuvsphere" << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32-4animals" << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());

@@ -34,6 +34,46 @@ public:
         return edge1.cross(edge2).normalized();
     }
 
+    Eigen::Vector3d get_normal(double u, double v)
+    {
+        // Barycentric coordinates
+        if (predefined_normals)
+        {
+            return normal1 * (1 - u - v) + normal2 * u + normal3 * v;
+        }
+        else
+        {
+            Eigen::Vector3d edge1 = v2 - v1;
+            Eigen::Vector3d edge2 = v3 - v1;
+            return edge1.cross(edge2).normalized();
+        }
+    }
+
+    void get_barycentric_coordinates(Eigen::Vector3d intersection_point, double& u_trig, double& v_trig)
+    {
+        Eigen::Vector3d edge1 = v2 - v1;
+        Eigen::Vector3d edge2 = v3 - v1;
+        Eigen::Vector3d p = intersection_point - v1;
+
+        double d00 = edge1.dot(edge1);
+        double d01 = edge1.dot(edge2);
+        double d11 = edge2.dot(edge2);
+        double d20 = p.dot(edge1);
+        double d21 = p.dot(edge2);
+
+        double denom = d00 * d11 - d01 * d01;
+
+        if (denom == 0)
+        {
+            u_trig = 0;
+            v_trig = 0;
+            return;
+        }
+
+        u_trig = (d11 * d20 - d01 * d21) / denom;
+        v_trig = (d00 * d21 - d01 * d20) / denom;
+    }
+
     inline bool hit(const Ray& r, Eigen::Vector3d& out, double& t) const
     {
         double t_min = 0.001;
