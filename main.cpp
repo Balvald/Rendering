@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\uvsphere-weight-norm.obj");
+    std::string path = std::string(".\\models\\uvsphere-high-res.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -395,32 +395,31 @@ int main(int argc, char *argv[])
             // Make color dependent on normal of the triangle
             if (hit_anything)
             {
-
                 // Intersection point
                 Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
 
                 // Surface normal
-                Eigen::Vector3d N = closest_triangle.get_normal(); // N
+                Eigen::Vector3d N = closest_triangle.get_normal().normalized(); // N
 
                 // Light direction
-                Eigen::Vector3d L = (light_pos - intersection_point); // L_light
+                Eigen::Vector3d L = (light_pos - intersection_point).normalized(); // L_light
 
                 // View direction
-                Eigen::Vector3d V = (cam.get_origin() - intersection_point); // L_cam
+                Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized(); // L_cam
 
                 // Reflection direction
                 Eigen::Vector3d R = (2.0 * ((N.dot(L)) * N) - L).normalized();  // L_refl
 
-                double ks = 0.7;
-                double kd = 0.5;
-                double ka = 0.01; // ambient light
+                double ks = 0.7; // specular reflection constant
+                double kd = 0.5; // diffuse reflection constant
+                double ka = 0.1; // ambient light constant
 
                 // Combine
                 Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, ambient_light_color, schininess, ks, kd, ka);
                 
-                std::cout << "Phong color: (" << color_vec.x() << ", " << color_vec.y() << ", " << color_vec.z() << ")" << std::endl;
+                // std::cout << "Phong color: (" << color_vec.x() << ", " << color_vec.y() << ", " << color_vec.z() << ")" << std::endl;
                 
-                color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
+                // color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
 
                 // apply tone mapping
                 color_vec.x() = color_vec.x() / (1.0 + color_vec.x());
@@ -460,7 +459,7 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32-movex" << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32-weightuvsphere" << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
