@@ -421,28 +421,27 @@ int main(int argc, char *argv[])
 
             Triangle closest_triangle;
 
-            for (Shape shape : shape_elements)
+            for (int k = 0; k < shape_elements.size(); ++k)
             {
-                std::vector<Triangle> shape_triangles = shape.get_triangles();
-
                 // check if the ray intersects with the bounding box of the shape
-                if (!shape.hit(ray))
+                if (! shape_elements[k].hit(ray))
                 {
                     continue; // skip this shape if the ray does not intersect with the bounding box
                 }
+                std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
 
                 // Check for intersections with triangles in the shape
-                for (Triangle triangle : shape_triangles)
+                for (int l = 0; l < shape_triangles.size(); ++l)
                 {
                     Eigen::Vector3d intersection_point;
                     double t;
 
-                    if(triangle.hit(ray, intersection_point, t))
+                    if(shape_triangles[l].hit(ray, intersection_point, t))
                     {
                         if (t < closest_t)
                         {
                             closest_t = t;
-                            closest_triangle = triangle;
+                            closest_triangle = shape_triangles[l];
                             hit_anything = true;
                         }
                     }
@@ -519,6 +518,7 @@ int main(int argc, char *argv[])
             #pragma omp atomic
             finished_pixels++;
 
+            #pragma omp critical
             std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
 
         }
