@@ -49,7 +49,8 @@ class Shape
         double box_max_z = std::get<1>(bounding_box).z();
 
         // Ray-box intersection (Bounding Box, Axis aligned to global axes)
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 3; ++i)
+        {
             double invD = 1.0 / r.direction()[i];
             double t0 = (std::get<0>(bounding_box)[i] - r.origin()[i]) * invD;
             double t1 = (std::get<1>(bounding_box)[i] - r.origin()[i]) * invD;
@@ -60,5 +61,5 @@ class Shape
                 return false;
         }
         return true;
-        }
+    }
 };
