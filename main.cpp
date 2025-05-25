@@ -19,6 +19,7 @@
 #include "ray.h"
 #include "camera.h"
 #include "triangle.h"
+#include "shape.h"
 
 #define CIMG
 #include "CImg.h"
@@ -255,11 +256,16 @@ int main(int argc, char *argv[])
 
     std::vector<std::tuple<Eigen::Vector3d, Eigen::Vector3d>> BoundingBoxes = {};
 
+    std::vector<Shape> shape_elements = {};
+
     load_model(path, &attrib, &shapes, &materials);
 
     // Loop over shapes
     for (auto shape : shapes)
     {
+        std::vector<Triangle> shape_triangles = std::vector<Triangle>();
+        std::vector<Eigen::Vector3d> shape_vertices = std::vector<Eigen::Vector3d>();
+
         // Loop over faces(polygon)
         size_t index_offset = 0;
 
@@ -331,6 +337,10 @@ int main(int argc, char *argv[])
             // std::cout << "(" << t.v3.x() << ", " << t.v3.y() << ", " << t.v3.z() << ")" << std::endl;
 
             triangles.push_back(t);
+            shape_triangles.push_back(t);
+            shape_vertices.push_back(face_vertices[0]);
+            shape_vertices.push_back(face_vertices[1]);
+            shape_vertices.push_back(face_vertices[2]);
 
             index_offset += fv;
         
@@ -370,6 +380,8 @@ int main(int argc, char *argv[])
 
         // add the bounding box to the list
         BoundingBoxes.push_back(std::make_tuple(min, max));
+
+        shape_elements.push_back(Shape(shape_triangles, shape_vertices, std::make_tuple(min, max)));
     }
 
     std::cout << "Number of triangles: " << triangles.size() << "\n";
@@ -383,8 +395,6 @@ int main(int argc, char *argv[])
         std::cout << "(" << triangle.v3.x() << ", " << triangle.v3.y() << ", " << triangle.v3.z() << ")" << std::endl;
     }
     */
-
-
 
     // cast rays and check for intersections
     std::cout << "Rendering image...\n";
@@ -411,23 +421,33 @@ int main(int argc, char *argv[])
 
             Triangle closest_triangle;
 
-            for (Triangle triangle : triangles)
+            for (Shape shape : shape_elements)
             {
-                Eigen::Vector3d intersection_point;
-                double t;
+                std::vector<Triangle> shape_triangles = shape.get_triangles();
 
-                if(triangle.hit(ray, intersection_point, t))
+                // check if the ray intersects with the bounding box of the shape
+                if (!shape.hit(ray))
                 {
-                    if (t < closest_t)
+                    continue; // skip this shape if the ray does not intersect with the bounding box
+                }
+
+                // Check for intersections with triangles in the shape
+                for (Triangle triangle : shape_triangles)
+                {
+                    Eigen::Vector3d intersection_point;
+                    double t;
+
+                    if(triangle.hit(ray, intersection_point, t))
                     {
-                        closest_t = t;
-                        closest_triangle = triangle;
-                        hit_anything = true;
+                        if (t < closest_t)
+                        {
+                            closest_t = t;
+                            closest_triangle = triangle;
+                            hit_anything = true;
+                        }
                     }
                 }
             }
-
-            // TODO: intersection with bounding boxes
 
             unsigned char color[3];
 
@@ -499,7 +519,7 @@ int main(int argc, char *argv[])
             #pragma omp atomic
             finished_pixels++;
 
-            // std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
+            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
 
         }
     }
