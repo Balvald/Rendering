@@ -111,7 +111,7 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
 
     Eigen::Vector3d R = 2.0 * N.dot(L) * N - L; // reflection direction
 
-    return (ka * ia) + (kd * (N.dot(L)) * id) + (ks * std::pow(V.dot(R), schininess) * is);
+    return (ka * ia) + (kd * (N.dot(L)) * id) + (ks * std::pow(std::max(V.dot(R), 0.0), schininess) * is);
 }
 
 
