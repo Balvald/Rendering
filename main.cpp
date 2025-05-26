@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\fouranimals.obj");
+    std::string path = std::string(".\\models\\uvsphere-high-res.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -515,17 +515,17 @@ int main(int argc, char *argv[])
 
             image.draw_point(i, image_height - j, color);
 
-            #pragma omp atomic
-            finished_pixels++;
+            //#pragma omp atomic
+            //finished_pixels++;
 
-            #pragma omp critical
-            std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
+            //#pragma omp critical
+            //std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
 
         }
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "new-uv-s32-4animals" << ".bmp";
+    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "-" << path.substr(9) << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
