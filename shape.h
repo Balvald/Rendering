@@ -18,7 +18,23 @@ class Shape
 
     Shape(std::vector<Triangle> triangles, std::vector<Eigen::Vector3d> vertices) : triangles(triangles), vertices(vertices)
     {
+        // Calculate bounding box from vertices
+        if (vertices.empty())
+        {
+            bounding_box = std::make_tuple(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(0, 0, 0));
+            return;
+        }
 
+        Eigen::Vector3d min = vertices[0];
+        Eigen::Vector3d max = vertices[0];
+
+        for (const auto& v : vertices)
+        {
+            min = min.cwiseMin(v);
+            max = max.cwiseMax(v);
+        }
+
+        bounding_box = std::make_tuple(min, max);
     }
 
     std::vector<Triangle> get_triangles() const
