@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\uvsphere-high-res.obj");
+    std::string path = std::string(".\\models\\fouranimals.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h

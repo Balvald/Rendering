@@ -42,17 +42,17 @@ class Shape
         double t_max = std::numeric_limits<double>::max();
 
         // Ray-box intersection (Bounding Box, Axis aligned to global axes)
-        for (int i = 0; i < 3; ++i)
-        {
-            double invD = 1.0 / r.direction()[i];
-            double t0 = (std::get<0>(bounding_box)[i] - r.origin()[i]) * invD;
-            double t1 = (std::get<1>(bounding_box)[i] - r.origin()[i]) * invD;
-            if (invD < 0.0) std::swap(t0, t1);
-            t_min = t0 > t_min ? t0 : t_min;
-            t_max = t1 < t_max ? t1 : t_max;
-            if (t_max <= t_min)
-                return false;
-        }
-        return true;
+        Eigen::Vector3d invD = r.direction().cwiseInverse();
+        Eigen::Vector3d t0s = (std::get<0>(bounding_box) - r.origin()).cwiseProduct(invD);
+        Eigen::Vector3d t1s = (std::get<1>(bounding_box) - r.origin()).cwiseProduct(invD);
+
+        // Swap t0 and t1 where invD < 0, branchlessly
+        Eigen::Vector3d tmin_vec = t0s.cwiseMin(t1s);
+        Eigen::Vector3d tmax_vec = t0s.cwiseMax(t1s);
+
+        double t_min_new = std::max(t_min, tmin_vec.maxCoeff());
+        double t_max_new = std::min(t_max, tmax_vec.minCoeff());
+
+        return t_max_new > t_min_new;
     }
 };
