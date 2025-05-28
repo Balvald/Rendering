@@ -327,10 +327,18 @@ int main(int argc, char *argv[])
             Triangle t = Triangle(
                 face_vertices[0],
                 face_vertices[1],
-                face_vertices[2],
-                face_normals[0],
-                face_normals[1],
-                face_normals[2]);
+                face_vertices[2]);
+            //    face_normals[0],
+            //    face_normals[1],
+            //    face_normals[2]);
+
+            //Triangle t = Triangle(
+            //    face_vertices[0],
+            //    face_vertices[1],
+            //    face_vertices[2],
+            //    face_normals[0],
+            //    face_normals[1],
+            //    face_normals[2]);
 
             // std::cout << "Triangle: (" << t.v1.x() << ", " << t.v1.y() << ", " << t.v1.z() << ")," << std::endl;
             // std::cout << "(" << t.v2.x() << ", " << t.v2.y() << ", " << t.v2.z() << ")," << std::endl;
