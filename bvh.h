@@ -221,7 +221,7 @@ class BoundingVolumeHierarchy
         return triangles.size();
     }
 
-    bool hit(const Ray& r) const
+    inline bool hit(const Ray& r) const
     {
         double t_min = std::numeric_limits<double>::min();
         double t_max = std::numeric_limits<double>::max();
