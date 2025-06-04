@@ -30,16 +30,17 @@ class BoundingVolumeHierarchy
             std::vector<Triangle> left_triangles;
             std::vector<Triangle> right_triangles;
 
-            for (const auto& triangle : triangles)
+            #pragma omp parallel for
+            for (int i = 0; i < triangles.size(), ++i)
             {
-                Eigen::Vector3d centroid = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+                Eigen::Vector3d centroid = (triangles[i].v1 + triangles[i].v2 + triangles[i].v3) / 3.0;
                 if (centroid.x() < center.x())
                 {
-                    left_triangles.push_back(triangle);
+                    left_triangles.push_back(triangles[i]);
                 }
                 else
                 {
-                    right_triangles.push_back(triangle);
+                    right_triangles.push_back(triangles[i]);
                 }
             }
 
