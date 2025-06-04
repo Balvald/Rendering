@@ -29,28 +29,44 @@ class BoundingVolumeHierarchy
             Eigen::Vector3d center = (std::get<0>(bounding_box) + std::get<1>(bounding_box)) / 2.0;
             std::vector<Triangle> left_triangles;
             std::vector<Triangle> right_triangles;
+            std::vector<Eigen::Vector3d> left_vertices;
+            std::vector<Eigen::Vector3d> right_vertices;
 
             #pragma omp parallel for
-            for (int i = 0; i < triangles.size(), ++i)
+            for (int i = 0; i < triangles.size(); ++i)
             {
                 Eigen::Vector3d centroid = (triangles[i].v1 + triangles[i].v2 + triangles[i].v3) / 3.0;
                 if (centroid.x() < center.x())
                 {
                     left_triangles.push_back(triangles[i]);
+                    // check if vertices are already in the left_vertices vector
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v1) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v1);
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v2) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v2);
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v3) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v3);
                 }
                 else
                 {
                     right_triangles.push_back(triangles[i]);
+                    // check if vertices are already in the right_vertices vector
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v1) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v1);
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v2) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v2);
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v3) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v3);
                 }
             }
 
             if (!left_triangles.empty())
             {
-                children.emplace_back(left_triangles, vertices, std::make_tuple(std::get<0>(bounding_box), center));
+                children.emplace_back(left_triangles, left_vertices, std::make_tuple(std::get<0>(bounding_box), center));
             }
             if (!right_triangles.empty())
             {
-                children.emplace_back(right_triangles, vertices, std::make_tuple(center, std::get<1>(bounding_box)));
+                children.emplace_back(right_triangles, right_vertices, std::make_tuple(center, std::get<1>(bounding_box)));
             }
         }
 
@@ -77,34 +93,50 @@ class BoundingVolumeHierarchy
 
         bounding_box = std::make_tuple(min, max);
 
-        // split triangles onto children if they exceed max_triangles
+// split triangles onto children if they exceed max_triangles
         if (triangles.size() > max_triangles)
         {
             Eigen::Vector3d center = (std::get<0>(bounding_box) + std::get<1>(bounding_box)) / 2.0;
             std::vector<Triangle> left_triangles;
             std::vector<Triangle> right_triangles;
+            std::vector<Eigen::Vector3d> left_vertices;
+            std::vector<Eigen::Vector3d> right_vertices;
 
             #pragma omp parallel for
-            for (int i = 0; i < triangles.size(), ++i)
+            for (int i = 0; i < triangles.size(); ++i)
             {
                 Eigen::Vector3d centroid = (triangles[i].v1 + triangles[i].v2 + triangles[i].v3) / 3.0;
                 if (centroid.x() < center.x())
                 {
                     left_triangles.push_back(triangles[i]);
+                    // check if vertices are already in the left_vertices vector
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v1) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v1);
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v2) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v2);
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v3) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v3);
                 }
                 else
                 {
                     right_triangles.push_back(triangles[i]);
+                    // check if vertices are already in the right_vertices vector
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v1) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v1);
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v2) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v2);
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v3) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v3);
                 }
             }
 
             if (!left_triangles.empty())
             {
-                children.emplace_back(left_triangles, vertices, std::make_tuple(std::get<0>(bounding_box), center));
+                children.emplace_back(left_triangles, left_vertices, std::make_tuple(std::get<0>(bounding_box), center));
             }
             if (!right_triangles.empty())
             {
-                children.emplace_back(right_triangles, vertices, std::make_tuple(center, std::get<1>(bounding_box)));
+                children.emplace_back(right_triangles, right_vertices, std::make_tuple(center, std::get<1>(bounding_box)));
             }
         }
     }
@@ -131,34 +163,50 @@ class BoundingVolumeHierarchy
 
         bounding_box = std::make_tuple(min, max);
 
-        // split triangles onto children if they exceed max_triangles
+// split triangles onto children if they exceed max_triangles
         if (triangles.size() > max_triangles)
         {
             Eigen::Vector3d center = (std::get<0>(bounding_box) + std::get<1>(bounding_box)) / 2.0;
             std::vector<Triangle> left_triangles;
             std::vector<Triangle> right_triangles;
+            std::vector<Eigen::Vector3d> left_vertices;
+            std::vector<Eigen::Vector3d> right_vertices;
 
             #pragma omp parallel for
-            for (int i = 0; i < triangles.size(), ++i)
+            for (int i = 0; i < triangles.size(); ++i)
             {
                 Eigen::Vector3d centroid = (triangles[i].v1 + triangles[i].v2 + triangles[i].v3) / 3.0;
                 if (centroid.x() < center.x())
                 {
                     left_triangles.push_back(triangles[i]);
+                    // check if vertices are already in the left_vertices vector
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v1) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v1);
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v2) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v2);
+                    if (std::find(left_vertices.begin(), left_vertices.end(), triangles[i].v3) == left_vertices.end())
+                        left_vertices.push_back(triangles[i].v3);
                 }
                 else
                 {
                     right_triangles.push_back(triangles[i]);
+                    // check if vertices are already in the right_vertices vector
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v1) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v1);
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v2) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v2);
+                    if (std::find(right_vertices.begin(), right_vertices.end(), triangles[i].v3) == right_vertices.end())
+                        right_vertices.push_back(triangles[i].v3);
                 }
             }
 
             if (!left_triangles.empty())
             {
-                children.emplace_back(left_triangles, vertices, std::make_tuple(std::get<0>(bounding_box), center));
+                children.emplace_back(left_triangles, left_vertices, std::make_tuple(std::get<0>(bounding_box), center));
             }
             if (!right_triangles.empty())
             {
-                children.emplace_back(right_triangles, vertices, std::make_tuple(center, std::get<1>(bounding_box)));
+                children.emplace_back(right_triangles, right_vertices, std::make_tuple(center, std::get<1>(bounding_box)));
             }
         }
     }
@@ -173,4 +221,23 @@ class BoundingVolumeHierarchy
         return triangles.size();
     }
 
-}
+    bool hit(const Ray& r) const
+    {
+        double t_min = std::numeric_limits<double>::min();
+        double t_max = std::numeric_limits<double>::max();
+
+        // Ray-box intersection (Bounding Box, Axis aligned to global axes)
+        Eigen::Vector3d invD = r.direction().cwiseInverse();
+        Eigen::Vector3d t0s = (std::get<0>(bounding_box) - r.origin()).cwiseProduct(invD);
+        Eigen::Vector3d t1s = (std::get<1>(bounding_box) - r.origin()).cwiseProduct(invD);
+
+        // Swap t0 and t1 where invD < 0, branchlessly
+        Eigen::Vector3d tmin_vec = t0s.cwiseMin(t1s);
+        Eigen::Vector3d tmax_vec = t0s.cwiseMax(t1s);
+
+        double t_min_new = std::max(t_min, tmin_vec.maxCoeff());
+        double t_max_new = std::min(t_max, tmax_vec.minCoeff());
+
+        return t_max_new > t_min_new;
+    }
+};
