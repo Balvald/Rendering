@@ -404,9 +404,155 @@ int main(int argc, char *argv[])
         }
 
         shape_elements.push_back(Shape(shape_triangles, shape_vertices, std::make_tuple(min, max)));
-        bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, shape_elements.size()-1, -1, -1, -1)));
+        bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1)));
 
+        // Split the bounding box into two halves to create a right and left child for the root node
+        // This is a simple way to create a BVH tree, but it can be improved by using a more sophisticated algorithm
+        if (bvh_trees.back().get_root().left_child_index == -1 && bvh_trees.back().get_root().right_child_index == -1)
+        {
+            // Create left child
+            Eigen::Vector3d left_min = min;
+            Eigen::Vector3d left_max = min + (max - min) / 2.0;
 
+            std::vector<int> left_shape_triangle_indices;
+            std::vector<int> left_shape_vertices_indices;
+
+            for (int i = 0; i < shape_triangle_indices.size(); ++i)
+            {
+                // Check if the triangle is in the left half of the bounding box
+                Triangle t = shape_triangles[shape_triangle_indices[i]];
+                if (t.v1.x() <= left_max.x() && t.v2.x() <= left_max.x() && t.v3.x() <= left_max.x())
+                {
+                    left_shape_triangle_indices.push_back(shape_triangle_indices[i]);
+                }
+            }
+
+            for (int i = 0; i < shape_vertices_indices.size(); ++i)
+            {
+                // Check if the vertex is in the left half of the bounding box
+                Eigen::Vector3d v = shape_vertices[shape_vertices_indices[i]];
+                if (v.x() <= left_max.x())
+                {
+                    left_shape_vertices_indices.push_back(shape_vertices_indices[i]);
+                }
+            }
+
+            BoundingVolumeHierarchy left_child_bvh = BoundingVolumeHierarchy(std::make_tuple(left_min, left_max), left_shape_triangle_indices, left_shape_vertices_indices, -1, -1, -1);
+            bvh_trees.back().get_node(0).left_child_index = bvh_trees.back().size();
+            bvh_trees.back().add_node(left_child_bvh);
+            // Create right child
+            Eigen::Vector3d right_min = min + (max - min) / 2.0;
+            Eigen::Vector3d right_max = max;
+
+            std::vector<int> right_shape_triangle_indices;
+            std::vector<int> right_shape_vertices_indices;
+
+            for (int i = 0; i < shape_triangle_indices.size(); ++i)
+            {
+                // Check if the triangle is in the right half of the bounding box
+                Triangle t = shape_triangles[shape_triangle_indices[i]];
+                if (t.v1.x() > right_min.x() || t.v2.x() > right_min.x() || t.v3.x() > right_min.x())
+                {
+                    right_shape_triangle_indices.push_back(shape_triangle_indices[i]);
+                }
+            }
+
+            for (int i = 0; i < shape_vertices_indices.size(); ++i)
+            {
+                // Check if the vertex is in the right half of the bounding box
+                Eigen::Vector3d v = shape_vertices[shape_vertices_indices[i]];
+                if (v.x() > right_min.x())
+                {
+                    right_shape_vertices_indices.push_back(shape_vertices_indices[i]);
+                }
+            }
+
+            BoundingVolumeHierarchy right_child_bvh = BoundingVolumeHierarchy(std::make_tuple(right_min, right_max), right_shape_triangle_indices, right_shape_vertices_indices, -1, -1, -1);
+            bvh_trees.back().get_node(0).right_child_index = bvh_trees.back().size();
+            bvh_trees.back().add_node(right_child_bvh);
+            // Update the parent index of the children
+            bvh_trees.back().get_node(bvh_trees.back().get_node(0).left_child_index).parent_index = 0;
+            bvh_trees.back().get_node(bvh_trees.back().get_node(0).right_child_index).parent_index = 0;
+
+            // clear indices for the root node as all indices are now in the children
+            bvh_trees.back().get_node(0).triangle_indices.clear();
+            bvh_trees.back().get_node(0).vertex_indices.clear();
+        }
+    }
+
+    // print out all relevant information for each bvh_tree in bvh_trees
+    std::cout << "Bounding Volume Hierarchies:\n";
+    for (int i = 0; i < bvh_trees.size(); ++i)
+    {
+        std::cout << "BVH Tree " << i << ":\n";
+        std::cout << "Number of nodes: " << bvh_trees[i].size() << "\n";
+        std::cout << "Root bounding box: (" 
+                  << std::get<0>(bvh_trees[i].get_root().bounding_box).x() << ", "
+                  << std::get<0>(bvh_trees[i].get_root().bounding_box).y() << ", "
+                  << std::get<0>(bvh_trees[i].get_root().bounding_box).z() << "), ("
+                  << std::get<1>(bvh_trees[i].get_root().bounding_box).x() << ", "
+                  << std::get<1>(bvh_trees[i].get_root().bounding_box).y() << ", "
+                  << std::get<1>(bvh_trees[i].get_root().bounding_box).z() << ")\n";
+        std::cout << "Left child index: " << bvh_trees[i].get_root().left_child_index << "\n";
+        std::cout << "Right child index: " << bvh_trees[i].get_root().right_child_index << "\n";
+        std::cout << "Parent index: " << bvh_trees[i].get_root().parent_index << "\n";
+        std::cout << "Triangle indices: ";
+        for (int j = 0; j < bvh_trees[i].get_root().triangle_indices.size(); ++j)
+        {
+            std::cout << bvh_trees[i].get_root().triangle_indices[j] << " ";
+        }
+        std::cout << "\nVertex indices: ";
+        for (int j = 0; j < bvh_trees[i].get_root().vertex_indices.size(); ++j)
+        {
+            std::cout << bvh_trees[i].get_root().vertex_indices[j] << " ";
+        }
+        std::cout << "\n\n";
+        // print out the bounding boxes of the children
+        if (bvh_trees[i].get_root().left_child_index != -1)
+        {
+            BoundingVolumeHierarchy left_child = bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index);
+            std::cout << "Left child bounding box: (" 
+                      << std::get<0>(left_child.bounding_box).x() << ", "
+                      << std::get<0>(left_child.bounding_box).y() << ", "
+                      << std::get<0>(left_child.bounding_box).z() << "), ("
+                      << std::get<1>(left_child.bounding_box).x() << ", "
+                      << std::get<1>(left_child.bounding_box).y() << ", "
+                      << std::get<1>(left_child.bounding_box).z() << ")\n";
+            std::cout << "Triangle indices: ";
+            for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).triangle_indices.size(); ++j)
+            {
+                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).triangle_indices[j] << " ";
+            }
+            std::cout << "\nVertex indices: ";
+            for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).vertex_indices.size(); ++j)
+            {
+                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).vertex_indices[j] << " ";
+            }
+            std::cout << "\n\n";
+        }
+        if (bvh_trees[i].get_root().right_child_index != -1)
+        {
+            BoundingVolumeHierarchy right_child = bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index);
+            std::cout << "Right child bounding box: (" 
+                      << std::get<0>(right_child.bounding_box).x() << ", "
+                      << std::get<0>(right_child.bounding_box).y() << ", "
+                      << std::get<0>(right_child.bounding_box).z() << "), ("
+                      << std::get<1>(right_child.bounding_box).x() << ", "
+                      << std::get<1>(right_child.bounding_box).y() << ", "
+                      << std::get<1>(right_child.bounding_box).z() << ")\n";
+            std::cout << "Triangle indices: ";
+            for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).triangle_indices.size(); ++j)
+            {
+                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).triangle_indices[j] << " ";
+            }
+            std::cout << "\nVertex indices: ";
+            for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).vertex_indices.size(); ++j)
+            {
+                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).vertex_indices[j] << " ";
+            }
+            std::cout << "\n\n";
+        }
+        std::cout << "----------------------------------------\n";
     }
 
     std::cout << "Number of triangles: " << triangles.size() << "\n";

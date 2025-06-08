@@ -13,8 +13,6 @@ class BoundingVolumeHierarchy
     std::vector<int> triangle_indices;
     std::vector<int> vertex_indices;
 
-    int shape_index = -1;          // if this stays -1, it means this node is not associated with a shape
-
     int parent_index = -1;          // if this stays -1, it means this is the root node
     int left_child_index = -1;      // if this stays -1, it means this node has no left child
     int right_child_index = -1;     // if this stays -1, it means this node has no right child
@@ -22,7 +20,6 @@ class BoundingVolumeHierarchy
     BoundingVolumeHierarchy(const std::tuple<Eigen::Vector3d, Eigen::Vector3d>& bounding_box,
                             const std::vector<int>& triangle_indices,
                             const std::vector<int>& vertex_indices,
-                            int shape_index = -1,
                             int parent_index = -1,
                             int left_child_index = -1,
                             int right_child_index = -1)
@@ -30,7 +27,6 @@ class BoundingVolumeHierarchy
           triangle_indices(triangle_indices),
           vertex_indices(vertex_indices),
           parent_index(parent_index),
-          shape_index(shape_index),
           left_child_index(left_child_index),
           right_child_index(right_child_index) {}
 };
