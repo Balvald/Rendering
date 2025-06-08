@@ -273,7 +273,6 @@ int main(int argc, char *argv[])
     // std::vector<Triangle> triangles = std::vector<Triangle>();
 
     std::vector<Eigen::Vector3d> vertices = {};
-    std::vector<Eigen::Vector3i> faces = {};
     std::vector<Triangle> triangles = {};
 
     std::vector<std::tuple<Eigen::Vector3d, Eigen::Vector3d>> BoundingBoxes = {};
@@ -620,13 +619,90 @@ int main(int argc, char *argv[])
             for (int k = 0; k < shape_elements.size(); ++k)
             {
                 // check if the ray intersects with the bounding box of the shape
-                if (! shape_elements[k].hit(ray))
+                /*if (!shape_elements[k].hit(ray))
+                {
+                    continue; // skip this shape if the ray does not intersect with the bounding box
+                }*/
+                std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
+
+                // go through bounding volume hierarchy
+                BVH_Tree bvh_tree = bvh_trees[k];
+                BoundingVolumeHierarchy current_node = bvh_tree.get_root();
+                // Check if the ray intersects with the bounding box of the BVH root
+                if (!hit_boundingbox(ray, current_node.bounding_box))
                 {
                     continue; // skip this shape if the ray does not intersect with the bounding box
                 }
-                std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
 
-                // Check for intersections with triangles in the shape
+                if (current_node.left_child_index != -1 || current_node.right_child_index != -1)
+                {
+                    // If the node has children, we need to traverse the BVH tree
+                    std::vector<BoundingVolumeHierarchy> stack;
+                    stack.push_back(current_node);
+
+                    while (!stack.empty())
+                    {
+                        BoundingVolumeHierarchy node = stack.back();
+                        stack.pop_back();
+
+                        // Check if the ray intersects with the bounding box of the node
+                        if (hit_boundingbox(ray, node.bounding_box))
+                        {
+                            // Check for intersections with triangles in this node
+                            for (int m = 0; m < node.triangle_indices.size(); ++m)
+                            {
+                                int l = node.triangle_indices[m];
+
+                                Eigen::Vector3d intersection_point;
+                                double t;
+
+                                if (shape_triangles[l].hit(ray, intersection_point, t))
+                                {
+                                    if (t < closest_t)
+                                    {
+                                        closest_t = t;
+                                        closest_triangle = shape_triangles[l];
+                                        hit_anything = true;
+                                    }
+                                }
+                            }
+
+                            // Add children to the stack
+                            if (node.left_child_index != -1)
+                            {
+                                stack.push_back(bvh_tree.get_node(node.left_child_index));
+                            }
+                            if (node.right_child_index != -1)
+                            {
+                                stack.push_back(bvh_tree.get_node(node.right_child_index));
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // If the node has no children, we can check for intersections directly
+                    for (int m = 0; m < current_node.triangle_indices.size(); ++m)
+                    {
+                        int l = current_node.triangle_indices[m];
+
+                        Eigen::Vector3d intersection_point;
+                        double t;
+
+                        if (shape_triangles[l].hit(ray, intersection_point, t))
+                        {
+                            if (t < closest_t)
+                            {
+                                closest_t = t;
+                                closest_triangle = shape_triangles[l];
+                                hit_anything = true;
+                            }
+                        }
+                    }
+                }
+
+                /*
+                // Check for intersections with triangles in the shapes
                 for (int l = 0; l < shape_triangles.size(); ++l)
                 {
                     Eigen::Vector3d intersection_point;
@@ -642,6 +718,7 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
+                */
             }
 
             unsigned char color[3];
