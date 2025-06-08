@@ -116,6 +116,27 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
 }
 
 
+bool hit_boundingbox(const Ray& r, const std::tuple<Eigen::Vector3d, Eigen::Vector3d>& bounding_box)
+{
+    double t_min = std::numeric_limits<double>::min();
+    double t_max = std::numeric_limits<double>::max();
+
+    // Ray-box intersection (Bounding Box, Axis aligned to global axes)
+    Eigen::Vector3d invD = r.direction().cwiseInverse();
+    Eigen::Vector3d t0s = (std::get<0>(bounding_box) - r.origin()).cwiseProduct(invD);
+    Eigen::Vector3d t1s = (std::get<1>(bounding_box) - r.origin()).cwiseProduct(invD);
+
+    // Swap t0 and t1 where invD < 0, branchlessly
+    Eigen::Vector3d tmin_vec = t0s.cwiseMin(t1s);
+    Eigen::Vector3d tmax_vec = t0s.cwiseMax(t1s);
+
+    double t_min_new = std::max(t_min, tmin_vec.maxCoeff());
+    double t_max_new = std::min(t_max, tmax_vec.minCoeff());
+
+    return t_max_new > t_min_new;
+}
+
+
 int main(int argc, char *argv[])
 {
 
@@ -521,12 +542,12 @@ int main(int argc, char *argv[])
             std::cout << "Triangle indices: ";
             for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).triangle_indices.size(); ++j)
             {
-                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).triangle_indices[j] << " ";
+                //std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).triangle_indices[j] << " ";
             }
             std::cout << "\nVertex indices: ";
             for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).vertex_indices.size(); ++j)
             {
-                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).vertex_indices[j] << " ";
+                //std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().left_child_index).vertex_indices[j] << " ";
             }
             std::cout << "\n\n";
         }
@@ -543,12 +564,12 @@ int main(int argc, char *argv[])
             std::cout << "Triangle indices: ";
             for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).triangle_indices.size(); ++j)
             {
-                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).triangle_indices[j] << " ";
+                //std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).triangle_indices[j] << " ";
             }
             std::cout << "\nVertex indices: ";
             for (int j = 0; j < bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).vertex_indices.size(); ++j)
             {
-                std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).vertex_indices[j] << " ";
+                //std::cout << bvh_trees[i].get_node(bvh_trees[i].get_root().right_child_index).vertex_indices[j] << " ";
             }
             std::cout << "\n\n";
         }
@@ -566,6 +587,10 @@ int main(int argc, char *argv[])
         std::cout << "(" << triangle.v3.x() << ", " << triangle.v3.y() << ", " << triangle.v3.z() << ")" << std::endl;
     }
     */
+
+
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
 
     // cast rays and check for intersections
     std::cout << "Rendering image...\n";
@@ -700,6 +725,10 @@ int main(int argc, char *argv[])
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    std::cout << "Rendering finished in " << elapsed_seconds.count() << " seconds.\n";
 
     std::cout << "\rDone.                 \n";
     std::cout << "Goodbye from rank " << rank << "\n";
