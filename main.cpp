@@ -19,6 +19,7 @@
 #include "ray.h"
 #include "camera.h"
 #include "triangle.h"
+#include "bvh.h"
 #include "shape.h"
 
 #define CIMG
@@ -256,12 +257,14 @@ int main(int argc, char *argv[])
 
     std::vector<std::tuple<Eigen::Vector3d, Eigen::Vector3d>> BoundingBoxes = {};
 
+    std::vector<BVH_Tree> bvh_trees = {};
+
     std::vector<Shape> shape_elements = {};
 
     load_model(path, &attrib, &shapes, &materials);
 
     // Loop over shapes
-    for (auto shape : shapes)
+    for (tinyobj::shape_t shape : shapes)
     {
         std::vector<Triangle> shape_triangles = std::vector<Triangle>();
         std::vector<Eigen::Vector3d> shape_vertices = std::vector<Eigen::Vector3d>();
@@ -389,7 +392,21 @@ int main(int argc, char *argv[])
         // add the bounding box to the list
         BoundingBoxes.push_back(std::make_tuple(min, max));
 
+        std::vector<int> shape_triangle_indices = {};
+        for (int i = 0; i < shape_triangles.size(); ++i)
+        {
+            shape_triangle_indices.push_back(i);
+        }
+        std::vector<int> shape_vertices_indices = {};
+        for (int i = 0; i < shape_vertices.size(); ++i)
+        {
+            shape_vertices_indices.push_back(i);
+        }
+
         shape_elements.push_back(Shape(shape_triangles, shape_vertices, std::make_tuple(min, max)));
+        bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, shape_elements.size()-1, -1, -1, -1)));
+
+
     }
 
     std::cout << "Number of triangles: " << triangles.size() << "\n";
