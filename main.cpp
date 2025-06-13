@@ -430,69 +430,117 @@ int main(int argc, char *argv[])
         // This is a simple way to create a BVH tree, but it can be improved by using a more sophisticated algorithm
         if (bvh_trees.back().get_root().left_child_index == -1 && bvh_trees.back().get_root().right_child_index == -1)
         {
-            // Create left child
-            Eigen::Vector3d left_min = min;
-            Eigen::Vector3d left_max = min + (max - min) / 2.0;
+            Eigen::Vector3d middle = min + (max - min) / 2.0;
 
             std::vector<int> left_shape_triangle_indices;
             std::vector<int> left_shape_vertices_indices;
-
-            for (int i = 0; i < shape_triangle_indices.size(); ++i)
-            {
-                // Check if the triangle is in the left half of the bounding box
-                Triangle t = shape_triangles[shape_triangle_indices[i]];
-                if (t.v1.x() <= left_max.x() && t.v2.x() <= left_max.x() && t.v3.x() <= left_max.x())
-                {
-                    left_shape_triangle_indices.push_back(shape_triangle_indices[i]);
-                }
-            }
-
-            for (int i = 0; i < shape_vertices_indices.size(); ++i)
-            {
-                // Check if the vertex is in the left half of the bounding box
-                Eigen::Vector3d v = shape_vertices[shape_vertices_indices[i]];
-                if (v.x() <= left_max.x())
-                {
-                    left_shape_vertices_indices.push_back(shape_vertices_indices[i]);
-                }
-            }
-
-            BoundingVolumeHierarchy left_child_bvh = BoundingVolumeHierarchy(std::make_tuple(left_min, left_max), left_shape_triangle_indices, left_shape_vertices_indices, -1, -1, -1);
-            bvh_trees.back().get_node(0).left_child_index = bvh_trees.back().size();
-            bvh_trees.back().add_node(left_child_bvh);
-            // Create right child
-            Eigen::Vector3d right_min = min + (max - min) / 2.0;
-            Eigen::Vector3d right_max = max;
 
             std::vector<int> right_shape_triangle_indices;
             std::vector<int> right_shape_vertices_indices;
 
             for (int i = 0; i < shape_triangle_indices.size(); ++i)
             {
-                // Check if the triangle is in the right half of the bounding box
                 Triangle t = shape_triangles[shape_triangle_indices[i]];
-                if (t.v1.x() > right_min.x() || t.v2.x() > right_min.x() || t.v3.x() > right_min.x())
-                {
+                // Prüfe, ob mindestens ein Vertex im linken Bereich liegt
+                bool in_left = (t.v1.x() <= middle.x()) || (t.v2.x() <= middle.x()) || (t.v3.x() <= middle.x());
+                // Prüfe, ob mindestens ein Vertex im rechten Bereich liegt
+                bool in_right = (t.v1.x() >= middle.x()) || (t.v2.x() >= middle.x()) || (t.v3.x() >= middle.x());
+
+                if (in_left)
+                    left_shape_triangle_indices.push_back(shape_triangle_indices[i]);
+                if (in_right)
                     right_shape_triangle_indices.push_back(shape_triangle_indices[i]);
-                }
             }
 
             for (int i = 0; i < shape_vertices_indices.size(); ++i)
             {
-                // Check if the vertex is in the right half of the bounding box
                 Eigen::Vector3d v = shape_vertices[shape_vertices_indices[i]];
-                if (v.x() > right_min.x())
-                {
+                if (v.x() <= middle.x())
+                    left_shape_vertices_indices.push_back(shape_vertices_indices[i]);
+                if (v.x() >= middle.x())
                     right_shape_vertices_indices.push_back(shape_vertices_indices[i]);
-                }
             }
 
-            BoundingVolumeHierarchy right_child_bvh = BoundingVolumeHierarchy(std::make_tuple(right_min, right_max), right_shape_triangle_indices, right_shape_vertices_indices, -1, -1, -1);
+            // **Berechne die Bounding-Box für alle enthaltenen Vertices im linken Kind**
+            Eigen::Vector3d left_min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+            Eigen::Vector3d left_max = Eigen::Vector3d::Constant(std::numeric_limits<double>::lowest());
+            for (int idx : left_shape_vertices_indices)
+            {
+                const Eigen::Vector3d& v = shape_vertices[idx];
+                left_min.x() = left_min.x() < v.x() ? left_min.x() : v.x();
+                left_min.y() = left_min.y() < v.y() ? left_min.y() : v.y();
+                left_min.z() = left_min.z() < v.z() ? left_min.z() : v.z();
+                left_max.x() = left_max.x() > v.x() ? left_max.x() : v.x();
+                left_max.y() = left_max.y() > v.y() ? left_max.y() : v.y();
+                left_max.z() = left_max.z() > v.z() ? left_max.z() : v.z();
+            }
+
+            // **Bounding-Box für rechtes Kind**
+            Eigen::Vector3d right_min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+            Eigen::Vector3d right_max = Eigen::Vector3d::Constant(std::numeric_limits<double>::lowest());
+            for (int idx : right_shape_vertices_indices)
+            {
+                const Eigen::Vector3d& v = shape_vertices[idx];
+                right_min.x() = right_min.x() < v.x() ? right_min.x() : v.x();
+                right_min.y() = right_min.y() < v.y() ? right_min.y() : v.y();
+                right_min.z() = right_min.z() < v.z() ? right_min.z() : v.z();
+                right_max.x() = right_max.x() > v.x() ? right_max.x() : v.x();
+                right_max.y() = right_max.y() > v.y() ? right_max.y() : v.y();
+                right_max.z() = right_max.z() > v.z() ? right_max.z() : v.z();
+            }
+
+            Eigen::Vector3d epsilon(1e-8, 1e-8, 1e-8);
+
+            BoundingVolumeHierarchy left_child_bvh = BoundingVolumeHierarchy(std::make_tuple(left_min-epsilon, left_max+epsilon), left_shape_triangle_indices, left_shape_vertices_indices, -1, -1, -1);
+            bvh_trees.back().get_node(0).left_child_index = bvh_trees.back().size();
+            bvh_trees.back().add_node(left_child_bvh);
+
+            BoundingVolumeHierarchy right_child_bvh = BoundingVolumeHierarchy(std::make_tuple(right_min-epsilon, right_max+epsilon), right_shape_triangle_indices, right_shape_vertices_indices, -1, -1, -1);
             bvh_trees.back().get_node(0).right_child_index = bvh_trees.back().size();
             bvh_trees.back().add_node(right_child_bvh);
+
             // Update the parent index of the children
             bvh_trees.back().get_node(bvh_trees.back().get_node(0).left_child_index).parent_index = 0;
             bvh_trees.back().get_node(bvh_trees.back().get_node(0).right_child_index).parent_index = 0;
+
+            // clear indices for the root node as all indices are now in the children
+            bvh_trees.back().get_node(0).triangle_indices.clear();
+            bvh_trees.back().get_node(0).vertex_indices.clear();
+
+            // print out all indices for each child
+            std::cout << "Left child triangle indices: ";
+            for (int j = 0; j < left_shape_triangle_indices.size(); ++j)
+            {
+                std::cout << left_shape_triangle_indices[j] << " ";
+            }
+            std::cout << "\nLeft child vertex indices: ";
+            for (int j = 0; j < left_shape_vertices_indices.size(); ++j)
+            {
+                std::cout << left_shape_vertices_indices[j] << " ";
+            }
+            std::cout << "\nRight child triangle indices: ";
+            for (int j = 0; j < right_shape_triangle_indices.size(); ++j)
+            {
+                std::cout << right_shape_triangle_indices[j] << " ";
+            }
+            std::cout << "\nRight child vertex indices: ";
+            for (int j = 0; j < right_shape_vertices_indices.size(); ++j)
+            {
+                std::cout << right_shape_vertices_indices[j] << " ";
+            }
+            std::cout << "\n";
+            // print out all indices for the root node
+            std::cout << "Root node triangle indices: ";
+            for (int j = 0; j < shape_triangle_indices.size(); ++j)
+            {
+                std::cout << shape_triangle_indices[j] << " ";
+            }
+            std::cout << "\nRoot node vertex indices: ";
+            for (int j = 0; j < shape_vertices_indices.size(); ++j)
+            {
+                std::cout << shape_vertices_indices[j] << " ";
+            }
+            std::cout << "\n";
 
             // clear indices for the root node as all indices are now in the children
             bvh_trees.back().get_node(0).triangle_indices.clear();
@@ -598,117 +646,97 @@ int main(int argc, char *argv[])
     long long total_pixels = image_width * image_height;
 
     #pragma omp parallel for
-    for (int j = image_height - 1; j >= 0; --j)
+    for (int idx = 0; idx < image_width * image_height; ++idx)
     {
-        #pragma omp parallel for
-        for (int i = 0; i < image_width; ++i)
+        int i = idx % image_width;
+        int j = image_height - 1 - (idx / image_width);
+        // Compute normalized coordinates
+        double u = double(i) / (image_width - 1);
+        double v = double(j) / (image_height - 1);
+
+        // Generate ray from camera
+        Ray ray = cam.get_ray(u, v);
+
+        // Check for intersections with triangles
+        double closest_t = std::numeric_limits<double>::max();
+        bool hit_anything = false;
+
+        Triangle closest_triangle;
+
+        for (int k = 0; k < shape_elements.size(); ++k)
         {
-            // Compute normalized coordinates
-            double u = double(i) / (image_width - 1);
-            double v = double(j) / (image_height - 1);
-
-            // Generate ray from camera
-            Ray ray = cam.get_ray(u, v);
-
-            // Check for intersections with triangles
-            double closest_t = std::numeric_limits<double>::max();
-            bool hit_anything = false;
-
-            Triangle closest_triangle;
-
-            for (int k = 0; k < shape_elements.size(); ++k)
+            // check if the ray intersects with the bounding box of the shape
+            /*if (!shape_elements[k].hit(ray))
             {
-                // check if the ray intersects with the bounding box of the shape
-                /*if (!shape_elements[k].hit(ray))
-                {
-                    continue; // skip this shape if the ray does not intersect with the bounding box
-                }*/
-                std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
+                continue; // skip this shape if the ray does not intersect with the bounding box
+            }*/
+            std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
 
-                // go through bounding volume hierarchy
-                BVH_Tree bvh_tree = bvh_trees[k];
-                BoundingVolumeHierarchy current_node = bvh_tree.get_root();
-                // Check if the ray intersects with the bounding box of the BVH root
-                if (!hit_boundingbox(ray, current_node.bounding_box))
-                {
-                    continue; // skip this shape if the ray does not intersect with the bounding box
-                }
+            // go through bounding volume hierarchy
+            BVH_Tree bvh_tree = bvh_trees[k];
+            BoundingVolumeHierarchy current_node = bvh_tree.get_root();
+            // Check if the ray intersects with the bounding box of the BVH root
+            if (!hit_boundingbox(ray, current_node.bounding_box))
+            {
+                continue; // skip this shape if the ray does not intersect with the bounding box
+            }
 
-                if (current_node.left_child_index != -1 || current_node.right_child_index != -1)
-                {
-                    // If the node has children, we need to traverse the BVH tree
-                    std::vector<BoundingVolumeHierarchy> stack;
-                    stack.push_back(current_node);
+            if (current_node.left_child_index != -1 || current_node.right_child_index != -1)
+            {
+                // If the node has children, we need to traverse the BVH tree
+                std::vector<BoundingVolumeHierarchy> stack;
+                stack.push_back(current_node);
 
-                    while (!stack.empty())
+                while (!stack.empty())
+                {
+                    BoundingVolumeHierarchy node = stack.back();
+                    stack.pop_back();
+
+                    // Check if the ray intersects with the bounding box of the node
+                    if (hit_boundingbox(ray, node.bounding_box))
                     {
-                        BoundingVolumeHierarchy node = stack.back();
-                        stack.pop_back();
-
-                        // Check if the ray intersects with the bounding box of the node
-                        if (hit_boundingbox(ray, node.bounding_box))
+                        // Check for intersections with triangles in this node
+                        for (int m = 0; m < node.triangle_indices.size(); ++m)
                         {
-                            // Check for intersections with triangles in this node
-                            for (int m = 0; m < node.triangle_indices.size(); ++m)
+                            int l = node.triangle_indices[m];
+
+                            Eigen::Vector3d intersection_point;
+                            double t;
+
+                            if (shape_triangles[l].hit(ray, intersection_point, t))
                             {
-                                int l = node.triangle_indices[m];
-
-                                Eigen::Vector3d intersection_point;
-                                double t;
-
-                                if (shape_triangles[l].hit(ray, intersection_point, t))
+                                if (t < closest_t)
                                 {
-                                    if (t < closest_t)
-                                    {
-                                        closest_t = t;
-                                        closest_triangle = shape_triangles[l];
-                                        hit_anything = true;
-                                    }
+                                    closest_t = t;
+                                    closest_triangle = shape_triangles[l];
+                                    hit_anything = true;
                                 }
                             }
-
-                            // Add children to the stack
-                            if (node.left_child_index != -1)
-                            {
-                                stack.push_back(bvh_tree.get_node(node.left_child_index));
-                            }
-                            if (node.right_child_index != -1)
-                            {
-                                stack.push_back(bvh_tree.get_node(node.right_child_index));
-                            }
                         }
-                    }
-                }
-                else
-                {
-                    // If the node has no children, we can check for intersections directly
-                    for (int m = 0; m < current_node.triangle_indices.size(); ++m)
-                    {
-                        int l = current_node.triangle_indices[m];
 
-                        Eigen::Vector3d intersection_point;
-                        double t;
-
-                        if (shape_triangles[l].hit(ray, intersection_point, t))
+                        // Add children to the stack
+                        if (node.left_child_index != -1)
                         {
-                            if (t < closest_t)
-                            {
-                                closest_t = t;
-                                closest_triangle = shape_triangles[l];
-                                hit_anything = true;
-                            }
+                            stack.push_back(bvh_tree.get_node(node.left_child_index));
+                        }
+                        if (node.right_child_index != -1)
+                        {
+                            stack.push_back(bvh_tree.get_node(node.right_child_index));
                         }
                     }
                 }
-
-                /*
-                // Check for intersections with triangles in the shapes
-                for (int l = 0; l < shape_triangles.size(); ++l)
+            }
+            else
+            {
+                // If the node has no children, we can check for intersections directly
+                for (int m = 0; m < current_node.triangle_indices.size(); ++m)
                 {
+                    int l = current_node.triangle_indices[m];
+
                     Eigen::Vector3d intersection_point;
                     double t;
 
-                    if(shape_triangles[l].hit(ray, intersection_point, t))
+                    if (shape_triangles[l].hit(ray, intersection_point, t))
                     {
                         if (t < closest_t)
                         {
@@ -718,83 +746,101 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
-                */
             }
 
-            unsigned char color[3];
-
-            // Output color based on hit
-            // Make color dependent on normal of the triangle
-            if (hit_anything)
+            /*
+            // Check for intersections with triangles in the shapes
+            for (int l = 0; l < shape_triangles.size(); ++l)
             {
-                // Intersection point
-                Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
+                Eigen::Vector3d intersection_point;
+                double t;
 
-                // Surface normal
-                // Eigen::Vector3d N = closest_triangle.get_normal().normalized(); // N
-                // Surface normal at the intersection point
-                // get the barycentric coordinates
-                double u_trig, v_trig;
-                closest_triangle.get_barycentric_coordinates(intersection_point, u_trig, v_trig);
-
-                Eigen::Vector3d N = closest_triangle.get_normal(u_trig, v_trig).normalized();
-
-                // Light direction
-                Eigen::Vector3d L = (light_pos - intersection_point).normalized(); // L_light
-
-                // View direction
-                Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized(); // L_cam
-
-                // Reflection direction
-                Eigen::Vector3d R = (2.0 * ((N.dot(L)) * N) - L).normalized();  // L_refl
-
-                double ks = 0.7; // specular reflection constant
-                double kd = 0.5; // diffuse reflection constant
-                double ka = 0.1; // ambient light constant
-
-                // Combine
-                Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, ambient_light_color, schininess, ks, kd, ka);
-                
-                // std::cout << "Phong color: (" << color_vec.x() << ", " << color_vec.y() << ", " << color_vec.z() << ")" << std::endl;
-                
-                // color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
-
-                // apply tone mapping
-                color_vec.x() = color_vec.x() / (1.0 + color_vec.x());
-                color_vec.y() = color_vec.y() / (1.0 + color_vec.y());
-                color_vec.z() = color_vec.z() / (1.0 + color_vec.z());
-
-                // apply gamma correction
-                // color_vec = color_vec.cwiseSqrt();
-
-                color[0] = static_cast<unsigned char>(255 * color_vec.x());
-                color[1] = static_cast<unsigned char>(255 * color_vec.y());
-                color[2] = static_cast<unsigned char>(255 * color_vec.z());
-
-                // use the normal of the triangle to determine color
-                //color[0] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
-                //color[1] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
-                //color[2] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
-
-                // print color
-                // std::cout << "Color: (" << (int)color[0] << ", " << (int)color[1] << ", " << (int)color[2] << ")" << std::endl;
+                if(shape_triangles[l].hit(ray, intersection_point, t))
+                {
+                    if (t < closest_t)
+                    {
+                        closest_t = t;
+                        closest_triangle = shape_triangles[l];
+                        hit_anything = true;
+                    }
+                }
             }
-            else
-            {
-                color[0] = 0; // Red
-                color[1] = 0; // Green
-                color[2] = 0; // Blue
-            }
-
-            image.draw_point(i, image_height - j, color);
-
-            //#pragma omp atomic
-            //finished_pixels++;
-
-            //#pragma omp critical
-            //std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
-
+            */
         }
+
+        unsigned char color[3];
+
+        // Output color based on hit
+        // Make color dependent on normal of the triangle
+        if (hit_anything)
+        {
+            // Intersection point
+            Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
+
+            // Surface normal
+            // Eigen::Vector3d N = closest_triangle.get_normal().normalized(); // N
+            // Surface normal at the intersection point
+            // get the barycentric coordinates
+            double u_trig, v_trig;
+            closest_triangle.get_barycentric_coordinates(intersection_point, u_trig, v_trig);
+
+            Eigen::Vector3d N = closest_triangle.get_normal(u_trig, v_trig).normalized();
+
+            // Light direction
+            Eigen::Vector3d L = (light_pos - intersection_point).normalized(); // L_light
+
+            // View direction
+            Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized(); // L_cam
+
+            // Reflection direction
+            Eigen::Vector3d R = (2.0 * ((N.dot(L)) * N) - L).normalized();  // L_refl
+
+            double ks = 0.7; // specular reflection constant
+            double kd = 0.5; // diffuse reflection constant
+            double ka = 0.1; // ambient light constant
+
+            // Combine
+            Eigen::Vector3d color_vec = phong(V, N, L, light_color, light_color, ambient_light_color, schininess, ks, kd, ka);
+            
+            // std::cout << "Phong color: (" << color_vec.x() << ", " << color_vec.y() << ", " << color_vec.z() << ")" << std::endl;
+            
+            // color_vec = color_vec.cwiseMin(1.0).cwiseMax(0.0); // Clamp to [0,1]
+
+            // apply tone mapping
+            color_vec.x() = color_vec.x() / (1.0 + color_vec.x());
+            color_vec.y() = color_vec.y() / (1.0 + color_vec.y());
+            color_vec.z() = color_vec.z() / (1.0 + color_vec.z());
+
+            // apply gamma correction
+            // color_vec = color_vec.cwiseSqrt();
+
+            color[0] = static_cast<unsigned char>(255 * color_vec.x());
+            color[1] = static_cast<unsigned char>(255 * color_vec.y());
+            color[2] = static_cast<unsigned char>(255 * color_vec.z());
+
+            // use the normal of the triangle to determine color
+            //color[0] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+            //color[1] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+            //color[2] = static_cast<unsigned char>(255 * (1.0 - ray.direction().dot(closest_triangle.normal())));
+
+            // print color
+            // std::cout << "Color: (" << (int)color[0] << ", " << (int)color[1] << ", " << (int)color[2] << ")" << std::endl;
+        }
+        else
+        {
+            color[0] = 0; // Red
+            color[1] = 0; // Green
+            color[2] = 0; // Blue
+        }
+
+        image.draw_point(i, image_height - j, color);
+
+        //#pragma omp atomic
+        //finished_pixels++;
+
+        //#pragma omp critical
+        //std::cout << "\rProgress: " << (100.0 * finished_pixels / total_pixels) << "% (" << finished_pixels << "/" << total_pixels << ")" << std::endl;
+
     }
 
     std::stringstream concat;
