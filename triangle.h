@@ -74,6 +74,20 @@ public:
         v_trig = (d00 * d21 - d01 * d20) / denom;
     }
 
+    inline Eigen::Vector3d get_min() const
+    {
+        return Eigen::Vector3d(std::min({v1.x(), v2.x(), v3.x()}),
+                               std::min({v1.y(), v2.y(), v3.y()}),
+                               std::min({v1.z(), v2.z(), v3.z()}));
+    }
+
+    inline Eigen::Vector3d get_max() const
+    {
+        return Eigen::Vector3d(std::max({v1.x(), v2.x(), v3.x()}),
+                               std::max({v1.y(), v2.y(), v3.y()}),
+                               std::max({v1.z(), v2.z(), v3.z()}));
+    }
+
     inline bool hit(const Ray& r, Eigen::Vector3d& out, double& t) const
     {
         double t_min = 0.001;
