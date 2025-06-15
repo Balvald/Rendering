@@ -426,126 +426,20 @@ int main(int argc, char *argv[])
         shape_elements.push_back(Shape(shape_triangles, shape_vertices, std::make_tuple(min, max)));
         bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1)));
 
-        // Split the bounding box into two halves to create a right and left child for the root node
-        // This is a simple way to create a BVH tree, but it can be improved by using a more sophisticated algorithm
-        if (bvh_trees.back().get_root().left_child_index == -1 && bvh_trees.back().get_root().right_child_index == -1)
-        {
-            Eigen::Vector3d middle = min + (max - min) / 2.0;
+        // split the bvh into smaller ones and add them to the bvh_tree
 
-            std::vector<int> left_shape_triangle_indices;
-            std::vector<int> left_shape_vertices_indices;
 
-            std::vector<int> right_shape_triangle_indices;
-            std::vector<int> right_shape_vertices_indices;
-
-            for (int i = 0; i < shape_triangle_indices.size(); ++i)
-            {
-                Triangle t = shape_triangles[shape_triangle_indices[i]];
-                // Prüfe, ob mindestens ein Vertex im linken Bereich liegt
-                bool in_left = (t.v1.x() <= middle.x()) || (t.v2.x() <= middle.x()) || (t.v3.x() <= middle.x());
-                // Prüfe, ob mindestens ein Vertex im rechten Bereich liegt
-                bool in_right = (t.v1.x() >= middle.x()) || (t.v2.x() >= middle.x()) || (t.v3.x() >= middle.x());
-
-                if (in_left)
-                    left_shape_triangle_indices.push_back(shape_triangle_indices[i]);
-                if (in_right)
-                    right_shape_triangle_indices.push_back(shape_triangle_indices[i]);
-            }
-
-            for (int i = 0; i < shape_vertices_indices.size(); ++i)
-            {
-                Eigen::Vector3d v = shape_vertices[shape_vertices_indices[i]];
-                if (v.x() <= middle.x())
-                    left_shape_vertices_indices.push_back(shape_vertices_indices[i]);
-                if (v.x() >= middle.x())
-                    right_shape_vertices_indices.push_back(shape_vertices_indices[i]);
-            }
-
-            // **Berechne die Bounding-Box für alle enthaltenen Vertices im linken Kind**
-            Eigen::Vector3d left_min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
-            Eigen::Vector3d left_max = Eigen::Vector3d::Constant(std::numeric_limits<double>::lowest());
-            for (int idx : left_shape_vertices_indices)
-            {
-                const Eigen::Vector3d& v = shape_vertices[idx];
-                left_min.x() = left_min.x() < v.x() ? left_min.x() : v.x();
-                left_min.y() = left_min.y() < v.y() ? left_min.y() : v.y();
-                left_min.z() = left_min.z() < v.z() ? left_min.z() : v.z();
-                left_max.x() = left_max.x() > v.x() ? left_max.x() : v.x();
-                left_max.y() = left_max.y() > v.y() ? left_max.y() : v.y();
-                left_max.z() = left_max.z() > v.z() ? left_max.z() : v.z();
-            }
-
-            // **Bounding-Box für rechtes Kind**
-            Eigen::Vector3d right_min = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
-            Eigen::Vector3d right_max = Eigen::Vector3d::Constant(std::numeric_limits<double>::lowest());
-            for (int idx : right_shape_vertices_indices)
-            {
-                const Eigen::Vector3d& v = shape_vertices[idx];
-                right_min.x() = right_min.x() < v.x() ? right_min.x() : v.x();
-                right_min.y() = right_min.y() < v.y() ? right_min.y() : v.y();
-                right_min.z() = right_min.z() < v.z() ? right_min.z() : v.z();
-                right_max.x() = right_max.x() > v.x() ? right_max.x() : v.x();
-                right_max.y() = right_max.y() > v.y() ? right_max.y() : v.y();
-                right_max.z() = right_max.z() > v.z() ? right_max.z() : v.z();
-            }
-
-            Eigen::Vector3d epsilon(1e-8, 1e-8, 1e-8);
-
-            BoundingVolumeHierarchy left_child_bvh = BoundingVolumeHierarchy(std::make_tuple(left_min-epsilon, left_max+epsilon), left_shape_triangle_indices, left_shape_vertices_indices, -1, -1, -1);
-            bvh_trees.back().get_node(0).left_child_index = bvh_trees.back().size();
-            bvh_trees.back().add_node(left_child_bvh);
-
-            BoundingVolumeHierarchy right_child_bvh = BoundingVolumeHierarchy(std::make_tuple(right_min-epsilon, right_max+epsilon), right_shape_triangle_indices, right_shape_vertices_indices, -1, -1, -1);
-            bvh_trees.back().get_node(0).right_child_index = bvh_trees.back().size();
-            bvh_trees.back().add_node(right_child_bvh);
-
-            // Update the parent index of the children
-            bvh_trees.back().get_node(bvh_trees.back().get_node(0).left_child_index).parent_index = 0;
-            bvh_trees.back().get_node(bvh_trees.back().get_node(0).right_child_index).parent_index = 0;
-
-            // clear indices for the root node as all indices are now in the children
-            bvh_trees.back().get_node(0).triangle_indices.clear();
-            bvh_trees.back().get_node(0).vertex_indices.clear();
-
-            // print out all indices for each child
-            std::cout << "Left child triangle indices: ";
-            for (int j = 0; j < left_shape_triangle_indices.size(); ++j)
-            {
-                std::cout << left_shape_triangle_indices[j] << " ";
-            }
-            std::cout << "\nLeft child vertex indices: ";
-            for (int j = 0; j < left_shape_vertices_indices.size(); ++j)
-            {
-                std::cout << left_shape_vertices_indices[j] << " ";
-            }
-            std::cout << "\nRight child triangle indices: ";
-            for (int j = 0; j < right_shape_triangle_indices.size(); ++j)
-            {
-                std::cout << right_shape_triangle_indices[j] << " ";
-            }
-            std::cout << "\nRight child vertex indices: ";
-            for (int j = 0; j < right_shape_vertices_indices.size(); ++j)
-            {
-                std::cout << right_shape_vertices_indices[j] << " ";
-            }
-            std::cout << "\n";
-            // print out all indices for the root node
-            std::cout << "Root node triangle indices: ";
-            for (int j = 0; j < shape_triangle_indices.size(); ++j)
-            {
-                std::cout << shape_triangle_indices[j] << " ";
-            }
-            std::cout << "\nRoot node vertex indices: ";
-            for (int j = 0; j < shape_vertices_indices.size(); ++j)
-            {
-                std::cout << shape_vertices_indices[j] << " ";
-            }
-            std::cout << "\n";
-
-            // clear indices for the root node as all indices are now in the children
-            bvh_trees.back().get_node(0).triangle_indices.clear();
-            bvh_trees.back().get_node(0).vertex_indices.clear();
-        }
+        BoundingVolumeHierarchy root = bvh_trees.back().get_root();
+        std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_result = root.split(shape_triangles, shape_vertices);
+        BoundingVolumeHierarchy left_child = std::get<0>(split_result);
+        BoundingVolumeHierarchy right_child = std::get<1>(split_result);
+        bvh_trees.back().add_node(left_child);
+        bvh_trees.back().add_node(right_child);
+        bvh_trees.back().get_node(0).left_child_index = 1; // set left child index of root
+        bvh_trees.back().get_node(0).right_child_index = 2; // set right child index of root
+        bvh_trees.back().get_node(1).parent_index = 0; // set parent index of left child
+        bvh_trees.back().get_node(2).parent_index = 0; // set parent index of right child
+        std::cout << "Shape has " << shape_triangles.size() << " triangles and " << shape_vertices.size() << " vertices." << std::endl;
     }
 
     // print out all relevant information for each bvh_tree in bvh_trees
@@ -567,12 +461,12 @@ int main(int argc, char *argv[])
         std::cout << "Triangle indices: ";
         for (int j = 0; j < bvh_trees[i].get_root().triangle_indices.size(); ++j)
         {
-            std::cout << bvh_trees[i].get_root().triangle_indices[j] << " ";
+            // std::cout << bvh_trees[i].get_root().triangle_indices[j] << " ";
         }
         std::cout << "\nVertex indices: ";
         for (int j = 0; j < bvh_trees[i].get_root().vertex_indices.size(); ++j)
         {
-            std::cout << bvh_trees[i].get_root().vertex_indices[j] << " ";
+            // std::cout << bvh_trees[i].get_root().vertex_indices[j] << " ";
         }
         std::cout << "\n\n";
         // print out the bounding boxes of the children
