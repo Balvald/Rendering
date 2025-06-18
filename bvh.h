@@ -46,7 +46,6 @@ class BoundingVolumeHierarchy
         // Split triangle indices based on the bounding box
         for (int index : triangle_indices)
         {
-            // Assuming Triangle class has a method to get the bounding box
             Triangle triangle = all_triangles[index];
             Eigen::Vector3d triangle_min = triangle.get_min();
             Eigen::Vector3d triangle_max = triangle.get_max();
@@ -99,6 +98,28 @@ class BoundingVolumeHierarchy
             triangle_indices, vertex_indices, -1, -1, -1);
 
         return std::make_tuple(left_child, right_child);
+    }
+
+    std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices)
+    {
+        // SAH (Surface Area Heuristic) is a more complex algorithm that requires calculating the surface area of the bounding boxes
+        // and determining the best split based on the distribution of triangles and vertices.
+
+
+
+
+
+
+    }
+
+    double surface_area(std::tuple<Eigen::Vector3d, Eigen::Vector3d> box) const
+    {
+        Eigen::Vector3d min = std::get<0>(box);
+        Eigen::Vector3d max = std::get<1>(box);
+        Eigen::Vector3d dimensions = max - min;
+        return 2.0 * (dimensions.x() * dimensions.y()
+                      + dimensions.x() * dimensions.z()
+                      + dimensions.y() * dimensions.z());
     }
 };
 
