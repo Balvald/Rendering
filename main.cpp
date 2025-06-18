@@ -136,6 +136,41 @@ bool hit_boundingbox(const Ray& r, const std::tuple<Eigen::Vector3d, Eigen::Vect
     return t_max_new > t_min_new;
 }
 
+void recursive_bvh_build(BoundingVolumeHierarchy current_node,
+                         std::vector<Triangle>& triangles,
+                         std::vector<Eigen::Vector3d>& vertices,
+                         std::vector<BoundingVolumeHierarchy>& bvh_tree,
+                         int max_depth = 10, int current_depth = 0, bool use_sah = false)
+{
+    if (current_depth >= max_depth || current_node.triangle_indices.size() <= 1)
+    {
+        // Create a leaf node
+        return;
+    }
+
+    auto [a, b] = use_sah ? current_node.split_SAH(triangles, vertices, current_node) : current_node.split(triangles, vertices);
+
+    BoundingVolumeHierarchy left_child = a;
+    BoundingVolumeHierarchy right_child = b;
+
+    // Recursively build the left and right children
+    recursive_bvh_build(left_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
+    recursive_bvh_build(right_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
+
+    // Add the left and right children to the BVH tree
+    bvh_tree.push_back(left_child);
+    bvh_tree.push_back(right_child);
+
+    // Update the current node with the left and right children indices
+    current_node.left_child_index = bvh_tree.size() - 2; // Last added node is the left child
+    current_node.right_child_index = bvh_tree.size() - 1; // Last added node is the right child
+
+    // update the parent index of the children
+    int parent_index = std::find(bvh_tree.begin(), bvh_tree.end(), current_node) - bvh_tree.begin();
+    left_child.parent_index = parent_index;
+    right_child.parent_index = parent_index;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -168,6 +203,7 @@ int main(int argc, char *argv[])
     // args: camera_up --cam-up
     // args: camera_fov --cam-fov
     // args: camera_aspect_ratio (is overwritten if image_width AND image_height are given) --cam-ar
+    // args: sah (sah is the surface area heuristic, which is used to build the BVH tree) --sah
 
     // Define light and material properties (add before the render loop)
     // (x, y, z)  (assuming x left (-) to right (+), y up (+) to down (-), z back to front)
@@ -190,6 +226,8 @@ int main(int argc, char *argv[])
 
     bool image_width_set = false;
     bool image_height_set = false;
+
+    bool sah_set = false;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -259,6 +297,10 @@ int main(int argc, char *argv[])
             {
                 image_width = static_cast<int>(image_height * cam.get_aspect_ratio());
             }
+        }
+        else if (arg == "--sah")
+        {
+            sah_set = true;
         }
         image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
     }
@@ -440,6 +482,60 @@ int main(int argc, char *argv[])
         bvh_trees.back().get_node(1).parent_index = 0; // set parent index of left child
         bvh_trees.back().get_node(2).parent_index = 0; // set parent index of right child
         std::cout << "Shape has " << shape_triangles.size() << " triangles and " << shape_vertices.size() << " vertices." << std::endl;
+
+        // now instead rewrite it so that we can have more than depth one for the bvh tree
+        // make the bvh tree recursive and split it until the number of triangles is below a certain threshold
+        int max_triangles_per_node = 10; // threshold for splitting the bvh tree
+
+        int current_index = 0;
+
+        while (bvh_trees.back().get_node(current_index).triangle_indices.size() > max_triangles_per_node)
+        {
+            BoundingVolumeHierarchy current_root = bvh_trees.back().get_root();
+            std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_result = current_root.split(shape_triangles, shape_vertices);
+            BoundingVolumeHierarchy left_child = std::get<0>(split_result);
+            BoundingVolumeHierarchy right_child = std::get<1>(split_result);
+
+            // add the children to the bvh tree
+            bvh_trees.back().add_node(left_child);
+            bvh_trees.back().add_node(right_child);
+
+            // update the indices of the children
+            int left_child_index = bvh_trees.back().size() - 2;
+            int right_child_index = bvh_trees.back().size() - 1;
+
+            // update the root node
+            bvh_trees.back().get_node(current_index).left_child_index = left_child_index;
+            bvh_trees.back().get_node(current_index).right_child_index = right_child_index;
+            bvh_trees.back().get_node(left_child_index).parent_index = current_index;
+            bvh_trees.back().get_node(right_child_index).parent_index = current_index;
+
+            // set the triangle indices and vertex indices of the children
+            bvh_trees.back().get_node(left_child_index).triangle_indices = left_child.triangle_indices;
+            bvh_trees.back().get_node(left_child_index).vertex_indices = left_child.vertex_indices;
+            bvh_trees.back().get_node(right_child_index).triangle_indices = right_child.triangle_indices;
+            bvh_trees.back().get_node(right_child_index).vertex_indices = right_child.vertex_indices;
+
+            // if the left child has no triangles, we can stop
+            if (bvh_trees.back().get_node(current_index).triangle_indices.empty())
+            {
+                // if the left child has no triangles, we can stop
+                // we can also stop if the right child has no triangles
+                if (bvh_trees.back().get_node(right_child_index).triangle_indices.empty())
+                {
+                    break;
+                }
+            }
+            else
+            {
+                // if the left child has triangles, we can continue splitting
+                current_index = left_child_index;
+            }
+
+
+        }
+
+
     }
 
     // print out all relevant information for each bvh_tree in bvh_trees
