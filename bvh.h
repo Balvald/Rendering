@@ -167,7 +167,7 @@ class BoundingVolumeHierarchy
             }
         }
 
-        // Create the left and right bounding boxes based on the best split found
+        // Create the bounding boxes for the left and right children based on the best split position
         Eigen::Vector3d left_min = std::get<0>(parent.bounding_box);
         Eigen::Vector3d left_max = std::get<1>(parent.bounding_box);
         Eigen::Vector3d right_min = std::get<0>(parent.bounding_box);
