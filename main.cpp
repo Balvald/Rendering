@@ -619,6 +619,7 @@ int main(int argc, char *argv[])
             // Check if the ray intersects with the bounding box of the BVH root
             if (!hit_boundingbox(ray, current_node.bounding_box))
             {
+                std::cout << "Skipping BVH node: " << k << " in Pixel (" << i << ", " << j << ") - Ray does not intersect with bounding box." << std::endl;
                 continue; // skip this shape if the ray does not intersect with the bounding box
             }
 
@@ -630,32 +631,13 @@ int main(int argc, char *argv[])
 
                 while (!stack.empty())
                 {
+                    std::cout << "Now checking out bvh node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
                     BoundingVolumeHierarchy node = bvh_tree.get_node(stack.back());
                     stack.pop_back();
 
                     // Check if the ray intersects with the bounding box of the node
                     if (hit_boundingbox(ray, node.bounding_box))
                     {
-                        // Check for intersections with triangles in this node
-                        #pragma omp parallel for
-                        for (int m = 0; m < node.triangle_indices.size(); ++m)
-                        {
-                            int l = node.triangle_indices[m];
-
-                            Eigen::Vector3d intersection_point;
-                            double t;
-
-                            if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
-                            {
-                                #pragma omp critical
-                                {
-                                    closest_t = t;
-                                    closest_triangle = shape_triangles[l];
-                                    hit_anything = true;
-                                }
-                            }
-                        }
-
                         // Add children to the stack
                         if (node.left_child_index != -1)
                         {
@@ -670,6 +652,7 @@ int main(int argc, char *argv[])
             }
             else
             {
+                std::cout << "Found Leaf node: " << k << " in Pixel (" << i << ", " << j << ")" << std::endl;
                 // If the node has no children, we can check for intersections directly
                 #pragma omp parallel for
                 for (int m = 0; m < current_node.triangle_indices.size(); ++m)
