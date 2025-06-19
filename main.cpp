@@ -136,7 +136,7 @@ bool hit_boundingbox(const Ray& r, const std::tuple<Eigen::Vector3d, Eigen::Vect
     return t_max_new > t_min_new;
 }
 
-void recursive_bvh_build(BoundingVolumeHierarchy current_node,
+void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
                          std::vector<Triangle>& triangles,
                          std::vector<Eigen::Vector3d>& vertices,
                          std::vector<BoundingVolumeHierarchy>& bvh_tree,
@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
 
         // split the bvh into smaller ones and add them to the bvh_tree
 
-
+        /*
         BoundingVolumeHierarchy root = bvh_trees.back().get_root();
         std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_result = root.split(shape_triangles, shape_vertices);
         BoundingVolumeHierarchy left_child = std::get<0>(split_result);
@@ -481,60 +481,15 @@ int main(int argc, char *argv[])
         bvh_trees.back().get_node(0).right_child_index = 2; // set right child index of root
         bvh_trees.back().get_node(1).parent_index = 0; // set parent index of left child
         bvh_trees.back().get_node(2).parent_index = 0; // set parent index of right child
+        */
+
         std::cout << "Shape has " << shape_triangles.size() << " triangles and " << shape_vertices.size() << " vertices." << std::endl;
 
         // now instead rewrite it so that we can have more than depth one for the bvh tree
         // make the bvh tree recursive and split it until the number of triangles is below a certain threshold
         int max_triangles_per_node = 10; // threshold for splitting the bvh tree
 
-        int current_index = 0;
-
-        while (bvh_trees.back().get_node(current_index).triangle_indices.size() > max_triangles_per_node)
-        {
-            BoundingVolumeHierarchy current_root = bvh_trees.back().get_root();
-            std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_result = current_root.split(shape_triangles, shape_vertices);
-            BoundingVolumeHierarchy left_child = std::get<0>(split_result);
-            BoundingVolumeHierarchy right_child = std::get<1>(split_result);
-
-            // add the children to the bvh tree
-            bvh_trees.back().add_node(left_child);
-            bvh_trees.back().add_node(right_child);
-
-            // update the indices of the children
-            int left_child_index = bvh_trees.back().size() - 2;
-            int right_child_index = bvh_trees.back().size() - 1;
-
-            // update the root node
-            bvh_trees.back().get_node(current_index).left_child_index = left_child_index;
-            bvh_trees.back().get_node(current_index).right_child_index = right_child_index;
-            bvh_trees.back().get_node(left_child_index).parent_index = current_index;
-            bvh_trees.back().get_node(right_child_index).parent_index = current_index;
-
-            // set the triangle indices and vertex indices of the children
-            bvh_trees.back().get_node(left_child_index).triangle_indices = left_child.triangle_indices;
-            bvh_trees.back().get_node(left_child_index).vertex_indices = left_child.vertex_indices;
-            bvh_trees.back().get_node(right_child_index).triangle_indices = right_child.triangle_indices;
-            bvh_trees.back().get_node(right_child_index).vertex_indices = right_child.vertex_indices;
-
-            // if the left child has no triangles, we can stop
-            if (bvh_trees.back().get_node(current_index).triangle_indices.empty())
-            {
-                // if the left child has no triangles, we can stop
-                // we can also stop if the right child has no triangles
-                if (bvh_trees.back().get_node(right_child_index).triangle_indices.empty())
-                {
-                    break;
-                }
-            }
-            else
-            {
-                // if the left child has triangles, we can continue splitting
-                current_index = left_child_index;
-            }
-
-
-        }
-
+        recursive_bvh_build(bvh_trees.back().get_root(), shape_triangles, shape_vertices, bvh_trees.back().nodes, 10, 0, sah_set);
 
     }
 
