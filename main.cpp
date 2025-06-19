@@ -143,10 +143,13 @@ void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
 {
     if (current_depth >= max_depth || current_node.triangle_indices.size() <= 1)
     {
+        std::cout << "Reached max depth or leaf node with " << current_node.triangle_indices.size() << " triangles.\n";
+        std::cout << "current_depth: " << current_depth << ", max_depth: " << max_depth << "\n";
         // Create a leaf node
         return;
     }
 
+    std::cout << "Building BVH at depth " << current_depth << " with " << current_node.triangle_indices.size() << " triangles.\n";
     auto [a, b] = use_sah ? current_node.split_SAH(triangles, vertices, current_node) : current_node.split(triangles, vertices);
 
     BoundingVolumeHierarchy left_child = a;
@@ -610,6 +613,13 @@ int main(int argc, char *argv[])
         #pragma omp parallel for
         for (int k = 0; k < shape_elements.size(); ++k)
         {
+            // Check if the ray intersects with the bounding box of the shape
+            if (!hit_boundingbox(ray, shape_elements[k].get_bounding_box()))
+            {
+                std::cout << "Skipping shape: " << k << " in Pixel (" << i << ", " << j << ") - Ray does not intersect with bounding box." << std::endl;
+                continue; // skip this shape if the ray does not intersect with the bounding box
+            }
+
 
             std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
 

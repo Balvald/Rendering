@@ -32,12 +32,7 @@ class BoundingVolumeHierarchy
 
     bool operator==(const BoundingVolumeHierarchy& other) const
     {
-        return bounding_box == other.bounding_box &&
-               triangle_indices == other.triangle_indices &&
-               vertex_indices == other.vertex_indices &&
-               parent_index == other.parent_index &&
-               left_child_index == other.left_child_index &&
-               right_child_index == other.right_child_index;
+        return bounding_box == other.bounding_box;
     }
 
     std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
