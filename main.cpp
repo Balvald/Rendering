@@ -3,13 +3,12 @@
 //  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
 //
 
-// TODO: make several triangles in the scene
-// TODO: Implement Phong. (interesting more than one light source)
+// (interesting more than one light source)
 // with phong shiny, diffuse, show examples for the report.
 // analysis of features in phong
 
-// TODO: make testnew.obj
-// TODO: acceleration datastructures (boxes, later bvh)
+// TODO: fix acceleration datastructures (bvh and bvh with sah)
+
 
 #include <Eigen/Dense>
 #include <iostream>
@@ -608,13 +607,10 @@ int main(int argc, char *argv[])
 
         Triangle closest_triangle;
 
+        #pragma omp parallel for
         for (int k = 0; k < shape_elements.size(); ++k)
         {
-            // check if the ray intersects with the bounding box of the shape
-            /*if (!shape_elements[k].hit(ray))
-            {
-                continue; // skip this shape if the ray does not intersect with the bounding box
-            }*/
+
             std::vector<Triangle> shape_triangles = shape_elements[k].get_triangles();
 
             // go through bounding volume hierarchy
@@ -629,18 +625,19 @@ int main(int argc, char *argv[])
             if (current_node.left_child_index != -1 || current_node.right_child_index != -1)
             {
                 // If the node has children, we need to traverse the BVH tree
-                std::vector<BoundingVolumeHierarchy> stack;
-                stack.push_back(current_node);
+                std::vector<int> stack;
+                stack.push_back(0);
 
                 while (!stack.empty())
                 {
-                    BoundingVolumeHierarchy node = stack.back();
+                    BoundingVolumeHierarchy node = bvh_tree.get_node(stack.back());
                     stack.pop_back();
 
                     // Check if the ray intersects with the bounding box of the node
                     if (hit_boundingbox(ray, node.bounding_box))
                     {
                         // Check for intersections with triangles in this node
+                        #pragma omp parallel for
                         for (int m = 0; m < node.triangle_indices.size(); ++m)
                         {
                             int l = node.triangle_indices[m];
@@ -648,9 +645,9 @@ int main(int argc, char *argv[])
                             Eigen::Vector3d intersection_point;
                             double t;
 
-                            if (shape_triangles[l].hit(ray, intersection_point, t))
+                            if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
                             {
-                                if (t < closest_t)
+                                #pragma omp critical
                                 {
                                     closest_t = t;
                                     closest_triangle = shape_triangles[l];
@@ -662,11 +659,11 @@ int main(int argc, char *argv[])
                         // Add children to the stack
                         if (node.left_child_index != -1)
                         {
-                            stack.push_back(bvh_tree.get_node(node.left_child_index));
+                            stack.push_back(node.left_child_index);
                         }
                         if (node.right_child_index != -1)
                         {
-                            stack.push_back(bvh_tree.get_node(node.right_child_index));
+                            stack.push_back(node.right_child_index);
                         }
                     }
                 }
@@ -674,6 +671,7 @@ int main(int argc, char *argv[])
             else
             {
                 // If the node has no children, we can check for intersections directly
+                #pragma omp parallel for
                 for (int m = 0; m < current_node.triangle_indices.size(); ++m)
                 {
                     int l = current_node.triangle_indices[m];
@@ -681,9 +679,9 @@ int main(int argc, char *argv[])
                     Eigen::Vector3d intersection_point;
                     double t;
 
-                    if (shape_triangles[l].hit(ray, intersection_point, t))
+                    if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
                     {
-                        if (t < closest_t)
+                        #pragma omp critical
                         {
                             closest_t = t;
                             closest_triangle = shape_triangles[l];
@@ -692,25 +690,6 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-
-            /*
-            // Check for intersections with triangles in the shapes
-            for (int l = 0; l < shape_triangles.size(); ++l)
-            {
-                Eigen::Vector3d intersection_point;
-                double t;
-
-                if(shape_triangles[l].hit(ray, intersection_point, t))
-                {
-                    if (t < closest_t)
-                    {
-                        closest_t = t;
-                        closest_triangle = shape_triangles[l];
-                        hit_anything = true;
-                    }
-                }
-            }
-            */
         }
 
         unsigned char color[3];
