@@ -1,6 +1,6 @@
 project('Raytracer', ['c', 'cpp'], default_options : ['cpp_std=c++20'], )
 
-# add_global_arguments('-O2', language : 'cpp')
+add_global_arguments('-O2', language : 'cpp')
 
 
 subdir('models')
