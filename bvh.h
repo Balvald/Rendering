@@ -30,6 +30,16 @@ class BoundingVolumeHierarchy
           left_child_index(left_child_index),
           right_child_index(right_child_index) {}
 
+    bool operator==(const BoundingVolumeHierarchy& other) const
+    {
+        return bounding_box == other.bounding_box &&
+               triangle_indices == other.triangle_indices &&
+               vertex_indices == other.vertex_indices &&
+               parent_index == other.parent_index &&
+               left_child_index == other.left_child_index &&
+               right_child_index == other.right_child_index;
+    }
+
     std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
     {
         // Split the bounding box into two halves
@@ -234,7 +244,7 @@ class BVH_Tree
         return nodes[index];
     }
 
-    BoundingVolumeHierarchy get_root()
+    BoundingVolumeHierarchy& get_root()
     {
         return nodes[0];
     }
