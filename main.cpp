@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\fouranimals.obj");
+    std::string path = std::string(".\\models\\cube.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
     std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
 
     // Image
-    int image_width = 1000;
+    int image_width = 100;
     int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
 
     // Handle command line arguments
