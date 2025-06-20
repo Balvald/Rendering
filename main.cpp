@@ -151,31 +151,37 @@ void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
 
     std::cout << "Building BVH at depth " << current_depth << " with " << current_node.triangle_indices.size() << " triangles.\n";
     //  : current_node.split_SAH(triangles, vertices, current_node)
-    auto [a, b] = current_node.split_SAH(triangles, vertices, current_node);
+    std::vector<BoundingVolumeHierarchy> children = current_node.split_SAH(triangles, vertices, current_node);
 
-    BoundingVolumeHierarchy left_child = a;
-    BoundingVolumeHierarchy right_child = b;
+    BoundingVolumeHierarchy left_child = children[0];
+    BoundingVolumeHierarchy right_child = children[1];
 
     // write out child triangle indices size
     std::cout << "Left child has " << left_child.triangle_indices.size() << " triangles.\n";
     std::cout << "Right child has " << right_child.triangle_indices.size() << " triangles.\n";
 
+    // Add the left and right children to the BVH tree
+    std::cout << "left child is supposed to be at index " << bvh_tree.size() << "\n";
+    current_node.set_left_child_index(bvh_tree.size()); // Last added node is the left child
+    left_child.own_index = bvh_tree.size(); // Set own index for the left child
+    bvh_tree.push_back(left_child);
+    std::cout << "right child is supposed to be at index " << bvh_tree.size() << "\n";
+    current_node.set_right_child_index(bvh_tree.size()); // Last added node is the right child
+    right_child.own_index = bvh_tree.size(); // Set own index for the right child
+    bvh_tree.push_back(right_child);
+
+    // print children indices of current node
+    std::cout << "Current node has left child at index " << current_node.left_child_index << " and right child at index " << current_node.right_child_index << ".\n";
+
+    // update the parent index of the children
+    std::cout << "Current node has index: " << current_node.own_index << ".\n";
+    std::cout << "Current node has parent index " << current_node.parent_index << ".\n";
+    left_child.set_parent_index(current_node.own_index);
+    right_child.set_parent_index(current_node.own_index);
+
     // Recursively build the left and right children
     recursive_bvh_build(left_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
     recursive_bvh_build(right_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
-
-    // Add the left and right children to the BVH tree
-    current_node.set_left_child_index(bvh_tree.size()); // Last added node is the left child
-    bvh_tree.push_back(left_child);
-    current_node.set_right_child_index(bvh_tree.size()); // Last added node is the right child
-    bvh_tree.push_back(right_child);
-
-
-    // update the parent index of the children
-    int parent_index = std::find(bvh_tree.begin(), bvh_tree.end(), current_node) - bvh_tree.begin();
-    left_child.set_parent_index(parent_index);
-    right_child.set_parent_index(parent_index);
-
 }
 
 
@@ -473,7 +479,7 @@ int main(int argc, char *argv[])
         }
 
         shape_elements.push_back(Shape(shape_triangles, shape_vertices, std::make_tuple(min, max)));
-        bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1)));
+        bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1, 0)));
 
         // split the bvh into smaller ones and add them to the bvh_tree
 
@@ -659,13 +665,14 @@ int main(int argc, char *argv[])
             while (!stack.empty())
             {
                 std::cout << "Now checking out bvh node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
-                BoundingVolumeHierarchy node = bvh_tree.get_node(stack.back());
+                const int current_index = stack.back();
+                BoundingVolumeHierarchy node = bvh_tree.get_node(current_index);
                 stack.pop_back();
 
                 // Check if the ray intersects with the bounding box of the node
                 if (hit_boundingbox(ray, node.bounding_box))
                 {
-                    std::cout << "Ray intersects with bounding box of node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
+                    std::cout << "Ray intersects with bounding box of node: " << current_index << " in Pixel (" << i << ", " << j << ")" << std::endl;
                     // print children indices
                     std::cout << "Left child index: " << node.left_child_index << ", Right child index: " << node.right_child_index << std::endl;
 
