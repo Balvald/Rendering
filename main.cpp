@@ -660,6 +660,10 @@ int main(int argc, char *argv[])
                 // Check if the ray intersects with the bounding box of the node
                 if (hit_boundingbox(ray, node.bounding_box))
                 {
+                    std::cout << "Ray intersects with bounding box of node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
+                    // print children indices
+                    std::cout << "Left child index: " << node.left_child_index << ", Right child index: " << node.right_child_index << std::endl;
+
                     // Add children to the stack
                     if (node.left_child_index != -1)
                     {
