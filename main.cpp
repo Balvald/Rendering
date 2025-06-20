@@ -658,10 +658,10 @@ int main(int argc, char *argv[])
 
             // go through bounding volume hierarchy
             BVH_Tree bvh_tree = bvh_trees[k];
-            BoundingVolumeHierarchy current_node = bvh_tree.get_root();
+            BoundingVolumeHierarchy current_root_node = bvh_tree.get_root();
 
             // Check if the ray intersects with the bounding box of the BVH root
-            if (!hit_boundingbox(ray, current_node.bounding_box))
+            if (!hit_boundingbox(ray, current_root_node.bounding_box))
             {
                 std::cout << "Skipping BVH node: " << k << " in Pixel (" << i << ", " << j << ") - Ray does not intersect with bounding box." << std::endl;
                 continue; // skip this shape if the ray does not intersect with the bounding box
@@ -703,15 +703,18 @@ int main(int argc, char *argv[])
                         std::cout << "Found Leaf node: " << node.own_index << " in Pixel (" << i << ", " << j << ")" << std::endl;
                         // If the node has no children, we can check for intersections directly
                         // #pragma omp parallel for
-                        for (int l : node.triangle_indices)
+                        for (int l = 0; l < triangles.size(); ++l)
                         {
                             std::cout << "Checking triangle: " << l << " in Pixel (" << i << ", " << j << ")" << std::endl;
 
-                            double t;
+                            double t = std::numeric_limits<double>::max();
+                            Eigen::Vector3d intersection_point = Eigen::Vector3d::Zero();
 
-                            if (Eigen::Vector3d intersection_point; shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
+                            if (shape_triangles[l].hit(ray, intersection_point, t))
                             {
+                                bool closer = (t < closest_t);
                                 // #pragma omp critical
+                                if (closer)
                                 {
                                     closest_t = t;
                                     closest_triangle = shape_triangles[l];
