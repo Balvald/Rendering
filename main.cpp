@@ -34,13 +34,13 @@
 // #endif
 
 
-inline void to_color(const Eigen::Vector3d pixel_color, unsigned char* result)
+inline void to_color(const Eigen::Vector3d &pixel_color, unsigned char* result)
 {
     double r = pixel_color.x();
     double g = pixel_color.y();
     double b = pixel_color.z();
 
-    const double scale = 1.0 / 1.0;
+    constexpr double scale = 1.0 / 1.0;
 
     r = r * scale;
     g = g * scale;
@@ -51,7 +51,7 @@ inline void to_color(const Eigen::Vector3d pixel_color, unsigned char* result)
     result[2] = static_cast<unsigned char>(256.0 * std::clamp(b, 0.0, 0.999));
 }
 
-inline void write_color(std::ostream &out, const Eigen::Vector3d pixel_color)
+inline void write_color(std::ostream &out, const Eigen::Vector3d &pixel_color)
 {
     unsigned char result[3];
     to_color(pixel_color, result);
@@ -65,7 +65,7 @@ inline Eigen::Vector3d ray_color(Ray& r)
     return Eigen::Vector3d(0,0,0);
 }
 
-void load_model(std::string model_path,
+void load_model(const std::string &model_path,
                 tinyobj::attrib_t* attrib,
                 std::vector<tinyobj::shape_t>* shapes,
                 std::vector<tinyobj::material_t>* materials)
@@ -136,12 +136,11 @@ bool hit_boundingbox(const Ray& r, const std::tuple<Eigen::Vector3d, Eigen::Vect
     return t_max_new > t_min_new;
 }
 
-void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
-                         std::vector<Triangle>& triangles,
-                         std::vector<Eigen::Vector3d>& vertices,
-                         std::vector<BoundingVolumeHierarchy>& bvh_tree,
-                         int max_depth = 10, int current_depth = 0, bool use_sah = false)
-{
+void recursive_bvh_build(BoundingVolumeHierarchy &current_node,
+                         std::vector<Triangle> &triangles,
+                         std::vector<Eigen::Vector3d> &vertices,
+                         std::vector<BoundingVolumeHierarchy> &bvh_tree,
+                         int max_depth = 10, int current_depth = 0, bool use_sah = false) {
     if (current_depth >= max_depth || current_node.triangle_indices.size() <= 1)
     {
         std::cout << "Reached max depth or leaf node with " << current_node.triangle_indices.size() << " triangles.\n";
@@ -154,8 +153,8 @@ void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
     //  : current_node.split_SAH(triangles, vertices, current_node)
     std::vector<BoundingVolumeHierarchy> children = current_node.split_SAH(triangles, vertices, current_node);
 
-    BoundingVolumeHierarchy left_child = children[0];
-    BoundingVolumeHierarchy right_child = children[1];
+    BoundingVolumeHierarchy& left_child = children[0];
+    BoundingVolumeHierarchy& right_child = children[1];
 
     // write out child triangle indices size
     std::cout << "Left child has " << left_child.triangle_indices.size() << " triangles.\n";
@@ -163,13 +162,16 @@ void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
 
     // Add the left and right children to the BVH tree
     std::cout << "left child is supposed to be at index " << bvh_tree.size() << "\n";
-    current_node.set_left_child_index(bvh_tree.size()); // Last added node is the left child
-    left_child.own_index = bvh_tree.size(); // Set own index for the left child
+    int left_child_index = static_cast<int>(bvh_tree.size());
     bvh_tree.push_back(left_child);
-    std::cout << "right child is supposed to be at index " << bvh_tree.size() << "\n";
-    current_node.set_right_child_index(bvh_tree.size()); // Last added node is the right child
-    right_child.own_index = bvh_tree.size(); // Set own index for the right child
+    int right_child_index = static_cast<int>(bvh_tree.size());
     bvh_tree.push_back(right_child);
+    current_node.left_child_index = left_child_index; // Last added node is the left child
+    left_child.own_index = static_cast<int>(bvh_tree.size()); // Set own index for the left child
+    std::cout << "right child is supposed to be at index " << bvh_tree.size() << "\n";
+    current_node.right_child_index = right_child_index; // Last added node is the right child
+    right_child.own_index = static_cast<int>(bvh_tree.size()); // Set own index for the right child
+
 
     // print children indices of current node
     std::cout << "Current node has left child at index " << current_node.left_child_index << " and right child at index " << current_node.right_child_index << ".\n";
@@ -205,7 +207,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\fouranimals.obj");
+    std::string path = std::string(".\\models\\uvsphere.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -233,7 +235,7 @@ int main(int argc, char *argv[])
     std::cout << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
 
     // Image
-    int image_width = 1920;
+    int image_width = 100;
     int image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
 
     // Handle command line arguments
@@ -381,7 +383,7 @@ int main(int argc, char *argv[])
                     double nx = attrib.normals[3*index.normal_index+0];
                     double ny = attrib.normals[3*index.normal_index+1];
                     double nz = attrib.normals[3*index.normal_index+2];
-                    face_normals.push_back(Eigen::Vector3d(nx, ny, nz));
+                    face_normals.emplace_back(nx, ny, nz);
                 }
         
                 /*
@@ -400,7 +402,7 @@ int main(int argc, char *argv[])
 
                 // std::cout << "v[" << index.vertex_index << "] = (" << vx << ", " << vy << ", " << vz << ")" << std::endl;
 
-                face_vertices.push_back(Eigen::Vector3d(vx, vy, vz));
+                face_vertices.emplace_back(vx, vy, vz);
             }
 
             Triangle t = Triangle(
@@ -466,7 +468,7 @@ int main(int argc, char *argv[])
         std::cout << "Bounding box: (" << min.x() << ", " << min.y() << ", " << min.z() << "), (" << max.x() << ", " << max.y() << ", " << max.z() << ")" << std::endl;
 
         // add the bounding box to the list
-        BoundingBoxes.push_back(std::make_tuple(min, max));
+        BoundingBoxes.emplace_back(min, max);
 
         std::vector<int> shape_triangle_indices = {};
         for (int i = 0; i < shape_triangles.size(); ++i)
@@ -479,8 +481,8 @@ int main(int argc, char *argv[])
             shape_vertices_indices.push_back(i);
         }
 
-        shape_elements.push_back(Shape(shape_triangles, shape_vertices, std::make_tuple(min, max)));
-        bvh_trees.push_back(BVH_Tree(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1, 0)));
+        shape_elements.emplace_back(shape_triangles, shape_vertices, std::make_tuple(min, max));
+        bvh_trees.emplace_back(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1, 0));
 
         // split the bvh into smaller ones and add them to the bvh_tree
 
@@ -621,8 +623,8 @@ int main(int argc, char *argv[])
         int i = idx % image_width;
         int j = image_height - 1 - (idx / image_width);
         // Compute normalized coordinates
-        double u = double(i) / (image_width - 1);
-        double v = double(j) / (image_height - 1);
+        double u = static_cast<double>(i) / (image_width - 1);
+        double v = static_cast<double>(j) / (image_height - 1);
 
         // Generate ray from camera
         Ray ray = cam.get_ray(u, v);
@@ -693,16 +695,13 @@ int main(int argc, char *argv[])
                         std::cout << "Found Leaf node: " << k << " in Pixel (" << i << ", " << j << ")" << std::endl;
                         // If the node has no children, we can check for intersections directly
                         // #pragma omp parallel for
-                        for (int m = 0; m < current_node.triangle_indices.size(); ++m)
+                        for (int l : current_node.triangle_indices)
                         {
-                            int l = current_node.triangle_indices[m];
-
                             std::cout << "Checking triangle: " << l << " in Pixel (" << i << ", " << j << ")" << std::endl;
 
-                            Eigen::Vector3d intersection_point;
                             double t;
 
-                            if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
+                            if (Eigen::Vector3d intersection_point; shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
                             {
                                 // #pragma omp critical
                                 {
@@ -716,7 +715,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    std::cout << "Ray does not intersect with bounding box of node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
+                    std::cout << "Ray does not intersect with bounding box of node: " << current_index << " in Pixel (" << i << ", " << j << ")" << std::endl;
                 }
             }
         }
