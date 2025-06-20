@@ -17,6 +17,7 @@ class BoundingVolumeHierarchy
     std::vector<int> vertex_indices;
 
     int parent_index = -1;          // if this stays -1, it means this is the root node
+    int own_index = -1;
     int left_child_index = -1;      // if this stays -1, it means this node has no left child
     int right_child_index = -1;     // if this stays -1, it means this node has no right child
 
@@ -25,20 +26,21 @@ class BoundingVolumeHierarchy
                             const std::vector<int>& vertex_indices,
                             int parent_index = -1,
                             int left_child_index = -1,
-                            int right_child_index = -1)
+                            int right_child_index = -1, int own_index = -1)
         : bounding_box(bounding_box),
           triangle_indices(triangle_indices),
           vertex_indices(vertex_indices),
           parent_index(parent_index),
           left_child_index(left_child_index),
-          right_child_index(right_child_index) {}
+          right_child_index(right_child_index),
+          own_index(own_index) {}
 
     bool operator==(const BoundingVolumeHierarchy& other) const
     {
         return bounding_box == other.bounding_box;
     }
 
-    std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
+    std::vector<BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
     {
         // Split the bounding box into two halves
         Eigen::Vector3d min = std::get<0>(bounding_box);
@@ -105,10 +107,14 @@ class BoundingVolumeHierarchy
             std::make_tuple(mid, max),
             right_triangle_indices, right_vertex_indices, -1, -1, -1);
 
-        return std::make_tuple(left_child, right_child);
+        std::vector<BoundingVolumeHierarchy> children;
+        children.push_back(left_child);
+        children.push_back(right_child);
+
+        return children;
     }
 
-    std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices, BoundingVolumeHierarchy parent)
+    std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices, BoundingVolumeHierarchy parent)
     {
         // SAH (Surface Area Heuristic) is a more complex algorithm that requires calculating the surface area of the bounding boxes
         // and determining the best split based on the distribution of triangles and vertices.
@@ -253,7 +259,11 @@ class BoundingVolumeHierarchy
             std::make_tuple(right_min, right_max),
             right_triangle_indices, right_vertex_indices, parent.parent_index, -1, -1);
 
-        return std::make_tuple(left_child, right_child);
+        std::vector<BoundingVolumeHierarchy> children;
+        children.push_back(left_child);
+        children.push_back(right_child);
+
+        return children;
     }
 
     double surface_area(std::tuple<Eigen::Vector3d, Eigen::Vector3d> box) const
