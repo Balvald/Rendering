@@ -140,12 +140,12 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
                          std::vector<Triangle> &triangles,
                          std::vector<Eigen::Vector3d> &vertices,
                          std::vector<BoundingVolumeHierarchy> &bvh_tree,
-                         int max_depth = 10, int current_depth = 0, bool use_sah = false) {
-    if (current_depth >= max_depth || current_node.triangle_indices.size() <= 1)
+                         int max_depth = 10, int current_depth = 0, bool use_sah = false, int max_trig = 20) {
+    if (current_depth >= max_depth || current_node.triangle_indices.size() <= max_trig)
     {
         std::cout << "Reached max depth or leaf node with " << current_node.triangle_indices.size() << " triangles.\n";
         std::cout << "current_depth: " << current_depth << ", max_depth: " << max_depth << "\n";
-        // Create a leaf node
+        // Current node is left a leaf node!
         return;
     }
 
@@ -188,8 +188,8 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
     // right_child.set_parent_index(current_node.get_own_index());
 
     // Recursively build the left and right children
-    recursive_bvh_build(bvh_tree[left_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1);
-    recursive_bvh_build(bvh_tree[right_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1);
+    recursive_bvh_build(bvh_tree[left_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1, use_sah, max_trig);
+    recursive_bvh_build(bvh_tree[right_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1, use_sah, max_trig);
 }
 
 
@@ -493,12 +493,12 @@ int main(int argc, char *argv[])
 
         // now instead rewrite it so that we can have more than depth one for the bvh tree
         // make the bvh tree recursive and split it until the number of triangles is below a certain threshold
-        int max_triangles_per_node = 10; // threshold for splitting the bvh tree
+        int max_triangles_per_node = 5; // threshold for splitting the bvh tree
 
         bvh_trees[0].nodes[0].set_own_index(0);
         bvh_trees[0].nodes[0].set_parent_index(-1);
 
-        recursive_bvh_build(bvh_trees[0].nodes[0], shape_triangles, shape_vertices, bvh_trees[bvh_trees.size()-1].nodes, 10, 0, sah_set);
+        recursive_bvh_build(bvh_trees[0].nodes[0], shape_triangles, shape_vertices, bvh_trees[bvh_trees.size()-1].nodes, 10, 0, sah_set, max_triangles_per_node);
 
         // go through each node in the bvh_tree and clear triangle and vertex indices if they are not a leaf node
         for (int i = 0; i < bvh_trees.back().size(); ++i)
