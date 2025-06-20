@@ -40,7 +40,7 @@ class BoundingVolumeHierarchy
         return bounding_box == other.bounding_box;
     }
 
-    std::vector<BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
+    [[nodiscard]] std::vector<BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
     {
         // Split the bounding box into two halves
         Eigen::Vector3d min = std::get<0>(bounding_box);
@@ -114,8 +114,7 @@ class BoundingVolumeHierarchy
         return children;
     }
 
-    std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices, BoundingVolumeHierarchy parent)
-    {
+    std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices, BoundingVolumeHierarchy& parent) const {
         // SAH (Surface Area Heuristic) is a more complex algorithm that requires calculating the surface area of the bounding boxes
         // and determining the best split based on the distribution of triangles and vertices.
 
@@ -216,7 +215,7 @@ class BoundingVolumeHierarchy
             Eigen::Vector3d triangle_max = triangle.get_max();
 
             // Check if the triangle is in the left half
-            if (triangle_max[best_axis] <= best_split_position)
+            if (triangle_max[best_axis] > best_split_position)
             {
                 left_triangle_indices.push_back(index);
                 // find the index of a vertex that is part of this triangle
@@ -234,7 +233,7 @@ class BoundingVolumeHierarchy
                 }
             }
             // Check if the triangle is in the right half
-            else if (triangle_min[best_axis] >= best_split_position)
+            else if (triangle_min[best_axis] < best_split_position)
             {
                 right_triangle_indices.push_back(index);
                 for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
@@ -266,7 +265,7 @@ class BoundingVolumeHierarchy
         return children;
     }
 
-    double surface_area(std::tuple<Eigen::Vector3d, Eigen::Vector3d> box) const
+    static double surface_area(std::tuple<Eigen::Vector3d, Eigen::Vector3d> box)
     {
         Eigen::Vector3d min = std::get<0>(box);
         Eigen::Vector3d max = std::get<1>(box);
@@ -276,29 +275,54 @@ class BoundingVolumeHierarchy
                       + dimensions.y() * dimensions.z());
     }
 
-    Eigen::Vector3d get_min() const
+    [[nodiscard]] Eigen::Vector3d get_min() const
     {
         return std::get<0>(bounding_box);
     }
 
-    Eigen::Vector3d get_max() const
+    [[nodiscard]] Eigen::Vector3d get_max() const
     {
         return std::get<1>(bounding_box);
     }
 
-    void set_parent_index(int index)
+    void set_parent_index(const int index)
     {
         parent_index = index;
     }
 
-    void set_left_child_index(int index)
+    void set_left_child_index(const int index)
     {
         left_child_index = index;
     }
 
-    void set_right_child_index(int index)
+    void set_right_child_index(const int index)
     {
         right_child_index = index;
+    }
+
+    void set_own_index(const int index)
+    {
+        own_index = index;
+    }
+
+    [[nodiscard]] int get_parent_index() const
+    {
+        return parent_index;
+    }
+
+    [[nodiscard]] int get_left_child_index() const
+    {
+        return left_child_index;
+    }
+
+    [[nodiscard]] int get_right_child_index() const
+    {
+        return right_child_index;
+    }
+
+    [[nodiscard]] int get_own_index() const
+    {
+        return own_index;
     }
 };
 
