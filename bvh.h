@@ -104,6 +104,8 @@ class BoundingVolumeHierarchy
             }
         }
 
+        // adjust left_min and left_max from triangles
+
 
         // Create left and right bounding boxes
         BoundingVolumeHierarchy left_child(

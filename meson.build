@@ -22,7 +22,7 @@ elif host_machine.system() == 'darwin'
     message('You\'re on your own if this doesn\'t work!')
 else
     # We are on some other unknown platform
-    mpi = dependency('mpi', language: 'cpp')
+    # mpi = dependency('mpi', language: 'cpp')
     omp = dependency('openmp')
     message('Unknown platform. Hope you have MPI available as its needed.')
     message('You\'re on your own if this doesn\'t work!')
