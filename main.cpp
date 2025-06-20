@@ -151,7 +151,7 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
 
     std::cout << "Building BVH at depth " << current_depth << " with " << current_node.triangle_indices.size() << " triangles.\n";
     //  : current_node.split_SAH(triangles, vertices, current_node)
-    std::vector<BoundingVolumeHierarchy> children = current_node.split_SAH(triangles, vertices, current_node);
+    std::vector<BoundingVolumeHierarchy> children = current_node.split(triangles, vertices);
 
     BoundingVolumeHierarchy& left_child = children[0];
     BoundingVolumeHierarchy& right_child = children[1];
@@ -489,21 +489,6 @@ int main(int argc, char *argv[])
         shape_elements.emplace_back(shape_triangles, shape_vertices, std::make_tuple(min, max));
         bvh_trees.emplace_back(BoundingVolumeHierarchy(std::make_tuple(min, max), shape_triangle_indices, shape_vertices_indices, -1, -1, -1, 0));
 
-        // split the bvh into smaller ones and add them to the bvh_tree
-
-        /*
-        BoundingVolumeHierarchy root = bvh_trees.back().get_root();
-        std::tuple<BoundingVolumeHierarchy, BoundingVolumeHierarchy> split_result = root.split(shape_triangles, shape_vertices);
-        BoundingVolumeHierarchy left_child = std::get<0>(split_result);
-        BoundingVolumeHierarchy right_child = std::get<1>(split_result);
-        bvh_trees.back().add_node(left_child);
-        bvh_trees.back().add_node(right_child);
-        bvh_trees.back().get_node(0).left_child_index = 1; // set left child index of root
-        bvh_trees.back().get_node(0).right_child_index = 2; // set right child index of root
-        bvh_trees.back().get_node(1).parent_index = 0; // set parent index of left child
-        bvh_trees.back().get_node(2).parent_index = 0; // set parent index of right child
-        */
-
         std::cout << "Shape has " << shape_triangles.size() << " triangles and " << shape_vertices.size() << " vertices." << std::endl;
 
         // now instead rewrite it so that we can have more than depth one for the bvh tree
@@ -703,7 +688,8 @@ int main(int argc, char *argv[])
                         std::cout << "Found Leaf node: " << node.own_index << " in Pixel (" << i << ", " << j << ")" << std::endl;
                         // If the node has no children, we can check for intersections directly
                         // #pragma omp parallel for
-                        for (int l = 0; l < triangles.size(); ++l)
+                        // for (int l = 0; l < triangles.size(); ++l)
+                        for (int l : node.triangle_indices)
                         {
                             std::cout << "Checking triangle: " << l << " in Pixel (" << i << ", " << j << ")" << std::endl;
 
