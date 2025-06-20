@@ -1,6 +1,5 @@
 project('Raytracer', ['c', 'cpp'], default_options : ['cpp_std=c++20'], )
 
-
 subdir('models')
 
 if host_machine.system() == 'windows'
