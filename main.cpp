@@ -27,11 +27,11 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
-#define USE_MPI
+// #define USE_MPI
 
-#ifdef USE_MPI
-#include <mpi.h>
-#endif
+// #ifdef USE_MPI
+// #include <mpi.h>
+// #endif
 
 
 inline void to_color(const Eigen::Vector3d pixel_color, unsigned char* result)
@@ -111,6 +111,7 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
 
     Eigen::Vector3d R = 2.0 * N.dot(L) * N - L; // reflection direction
 
+    // before I forgot to clamp the dot product, which after the application of the std::pow function would lead to values that are way too big
     return (ka * ia) + (kd * (N.dot(L)) * id) + (ks * std::pow(std::max(V.dot(R), 0.0), schininess) * is);
 }
 

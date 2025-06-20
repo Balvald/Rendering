@@ -93,7 +93,7 @@ public:
         double t_min = 0.001;
         double t_max = std::numeric_limits<double>::max();
 
-        constexpr double epsilon = FLT_EPSILON;
+        constexpr double epsilon = (double) std::numeric_limits<float>::epsilon();
 
         Eigen::Vector3d vertex0 = this->v1;
         Eigen::Vector3d vertex1 = this->v2;
