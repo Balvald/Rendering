@@ -163,24 +163,29 @@ void recursive_bvh_build(BoundingVolumeHierarchy &current_node,
     // Add the left and right children to the BVH tree
     std::cout << "left child is supposed to be at index " << bvh_tree.size() << "\n";
     int left_child_index = static_cast<int>(bvh_tree.size());
+    std::cout << "problem is not the bvh_tree.size() call" << std::endl;
     bvh_tree.push_back(left_child);
     int right_child_index = static_cast<int>(bvh_tree.size());
     bvh_tree.push_back(right_child);
-    current_node.left_child_index = left_child_index; // Last added node is the left child
-    left_child.own_index = static_cast<int>(bvh_tree.size()); // Set own index for the left child
-    std::cout << "right child is supposed to be at index " << bvh_tree.size() << "\n";
-    current_node.right_child_index = right_child_index; // Last added node is the right child
-    right_child.own_index = static_cast<int>(bvh_tree.size()); // Set own index for the right child
-
+    // current_node.set_left_child_index(left_child_index); // Last added node is the left child
+    std::cout << "current node (parent) get_own_index: " << current_node.get_own_index() << " vs. " << bvh_tree.size() << " as size of bvh_tree\n";
+    bvh_tree[current_node.get_own_index()].set_left_child_index(left_child_index);
+    bvh_tree[left_child_index].set_own_index(static_cast<int>(left_child_index)); // Set own index for the left child
+    bvh_tree[left_child_index].set_parent_index(current_node.get_own_index());
+    std::cout << "right child is supposed to be at index " << bvh_tree.size()-1 << "\n";
+    bvh_tree[current_node.get_own_index()].set_right_child_index(right_child_index);
+    // current_node.set_right_child_index(right_child_index); // Last added node is the right child
+    bvh_tree[right_child_index].set_own_index(static_cast<int>(right_child_index)); // Set own index for the right child
+    bvh_tree[right_child_index].set_parent_index(current_node.get_own_index());
 
     // print children indices of current node
-    std::cout << "Current node has left child at index " << current_node.left_child_index << " and right child at index " << current_node.right_child_index << ".\n";
+    std::cout << "Current node has left child at index " << current_node.get_left_child_index() << " and right child at index " << current_node.get_right_child_index() << ".\n";
 
     // update the parent index of the children
-    std::cout << "Current node has index: " << current_node.own_index << ".\n";
-    std::cout << "Current node has parent index " << current_node.parent_index << ".\n";
-    left_child.set_parent_index(current_node.own_index);
-    right_child.set_parent_index(current_node.own_index);
+    std::cout << "Current node has index: " << current_node.get_own_index() << ".\n";
+    std::cout << "Current node has parent index " << current_node.get_parent_index() << ".\n";
+    // left_child.set_parent_index(current_node.get_own_index());
+    // right_child.set_parent_index(current_node.get_own_index());
 
     // Recursively build the left and right children
     recursive_bvh_build(left_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
@@ -505,7 +510,7 @@ int main(int argc, char *argv[])
         // make the bvh tree recursive and split it until the number of triangles is below a certain threshold
         int max_triangles_per_node = 10; // threshold for splitting the bvh tree
 
-        recursive_bvh_build(bvh_trees.back().get_root(), shape_triangles, shape_vertices, bvh_trees.back().nodes, 10, 0, sah_set);
+        recursive_bvh_build(bvh_trees.back().get_root(), shape_triangles, shape_vertices, bvh_trees[bvh_trees.size()-1].nodes, 10, 0, sah_set);
 
         // go through each node in the bvh_tree and clear triangle and vertex indices if they are not a leaf node
         for (int i = 0; i < bvh_trees.back().size(); ++i)
