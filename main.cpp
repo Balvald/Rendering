@@ -136,7 +136,7 @@ bool hit_boundingbox(const Ray& r, const std::tuple<Eigen::Vector3d, Eigen::Vect
     return t_max_new > t_min_new;
 }
 
-void recursive_bvh_build(BoundingVolumeHierarchy &current_node,
+void recursive_bvh_build(BoundingVolumeHierarchy current_node,
                          std::vector<Triangle> &triangles,
                          std::vector<Eigen::Vector3d> &vertices,
                          std::vector<BoundingVolumeHierarchy> &bvh_tree,
@@ -510,7 +510,10 @@ int main(int argc, char *argv[])
         // make the bvh tree recursive and split it until the number of triangles is below a certain threshold
         int max_triangles_per_node = 10; // threshold for splitting the bvh tree
 
-        recursive_bvh_build(bvh_trees.back().get_root(), shape_triangles, shape_vertices, bvh_trees[bvh_trees.size()-1].nodes, 10, 0, sah_set);
+        bvh_trees[0].nodes[0].set_own_index(0);
+        bvh_trees[0].nodes[0].set_parent_index(-1);
+
+        recursive_bvh_build(bvh_trees[0].nodes[0], shape_triangles, shape_vertices, bvh_trees[bvh_trees.size()-1].nodes, 10, 0, sah_set);
 
         // go through each node in the bvh_tree and clear triangle and vertex indices if they are not a leaf node
         for (int i = 0; i < bvh_trees.back().size(); ++i)
@@ -690,12 +693,12 @@ int main(int argc, char *argv[])
                         std::cout << "Pushing left child: " << node.left_child_index << " to stack." << std::endl;
                         stack.push_back(node.left_child_index);
                     }
-                    else if (node.right_child_index != -1)
+                    if (node.right_child_index != -1)
                     {
                         std::cout << "Pushing right child: " << node.right_child_index << " to stack." << std::endl;
                         stack.push_back(node.right_child_index);
                     }
-                    else if (current_node.left_child_index == -1 && current_node.right_child_index == -1)
+                    if (current_node.left_child_index == -1 && current_node.right_child_index == -1)
                     {
                         std::cout << "Found Leaf node: " << k << " in Pixel (" << i << ", " << j << ")" << std::endl;
                         // If the node has no children, we can check for intersections directly
