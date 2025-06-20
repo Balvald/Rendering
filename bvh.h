@@ -45,7 +45,18 @@ class BoundingVolumeHierarchy
         // Split the bounding box into two halves
         Eigen::Vector3d min = std::get<0>(bounding_box);
         Eigen::Vector3d max = std::get<1>(bounding_box);
+        Eigen::Vector3d dimensions = max - min;
+
+        // Find the axis with the largest extent
+        int split_axis = 0;
+        if (dimensions.y() > dimensions.x() && dimensions.y() > dimensions.z()) {
+            split_axis = 1;  // y-axis has largest extent
+        } else if (dimensions.z() > dimensions.x() && dimensions.z() > dimensions.y()) {
+            split_axis = 2;  // z-axis has largest extent
+        }
+
         Eigen::Vector3d mid = (min + max) / 2.0;
+
 
         // Create new triangle and vertex indices for the left and right children
         std::vector<int> left_triangle_indices;
@@ -53,44 +64,41 @@ class BoundingVolumeHierarchy
         std::vector<int> left_vertex_indices;
         std::vector<int> right_vertex_indices;
 
-        // Split triangle indices based on the bounding box
-        for (int index : triangle_indices)
-        {
-            Triangle triangle = all_triangles[index];
-            Eigen::Vector3d triangle_min = triangle.get_min();
-            Eigen::Vector3d triangle_max = triangle.get_max();
+        // Initialize the bounding boxes for left and right children
+        Eigen::Vector3d left_min = min;
+        Eigen::Vector3d left_max = max;
+        Eigen::Vector3d right_min = min;
+        Eigen::Vector3d right_max = max;
 
-            // Check if the triangle is in the left half
-            if (triangle_max.x() <= mid.x())
-            {
+        // Adjust the split coordinate based on the chosen axis
+        left_max[split_axis] = mid[split_axis];
+        right_min[split_axis] = mid[split_axis];
+
+        // Distribute triangles between left and right children
+        for (int index : triangle_indices) {
+            Triangle triangle = all_triangles[index];
+            Eigen::Vector3d triangle_center = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+
+            if (triangle_center[split_axis] <= mid[split_axis]) {
                 left_triangle_indices.push_back(index);
-                // find the index of a vertex that is part of this triangle
-                // all_vertices has all vertices
-                for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
-                {
+                // Add vertices to left child
+                for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3}) {
                     auto it = std::find(all_vertices.begin(), all_vertices.end(), vertex);
-                    if (it != all_vertices.end())
-                    {
+                    if (it != all_vertices.end()) {
                         int vertex_index = std::distance(all_vertices.begin(), it);
-                        if (std::find(left_vertex_indices.begin(), left_vertex_indices.end(), vertex_index) == left_vertex_indices.end())
-                        {
+                        if (std::find(left_vertex_indices.begin(), left_vertex_indices.end(), vertex_index) == left_vertex_indices.end()) {
                             left_vertex_indices.push_back(vertex_index);
                         }
                     }
                 }
-            }
-            // Check if the triangle is in the right half
-            else if (triangle_min.x() >= mid.x())
-            {
+            } else {
                 right_triangle_indices.push_back(index);
-                for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
-                {
+                // Add vertices to right child
+                for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3}) {
                     auto it = std::find(all_vertices.begin(), all_vertices.end(), vertex);
-                    if (it != all_vertices.end())
-                    {
+                    if (it != all_vertices.end()) {
                         int vertex_index = std::distance(all_vertices.begin(), it);
-                        if (std::find(right_vertex_indices.begin(), right_vertex_indices.end(), vertex_index) == right_vertex_indices.end())
-                        {
+                        if (std::find(right_vertex_indices.begin(), right_vertex_indices.end(), vertex_index) == right_vertex_indices.end()) {
                             right_vertex_indices.push_back(vertex_index);
                         }
                     }
@@ -98,13 +106,14 @@ class BoundingVolumeHierarchy
             }
         }
 
+
         // Create left and right bounding boxes
         BoundingVolumeHierarchy left_child(
-            std::make_tuple(min, mid),
+            std::make_tuple(left_min, left_max),
             left_triangle_indices, left_vertex_indices, -1, -1, -1);
 
         BoundingVolumeHierarchy right_child(
-            std::make_tuple(mid, max),
+            std::make_tuple(right_min, right_max),
             right_triangle_indices, right_vertex_indices, -1, -1, -1);
 
         std::vector<BoundingVolumeHierarchy> children;
@@ -186,7 +195,7 @@ class BoundingVolumeHierarchy
         Eigen::Vector3d right_min = std::get<0>(parent.bounding_box);
         Eigen::Vector3d right_max = std::get<1>(parent.bounding_box);
 
-        if (best_axis == 0) // x-axis
+        if (best_axis == 2) // x-axis
         {
             left_max.x() = best_split_position;
             right_min.x() = best_split_position;
@@ -196,7 +205,7 @@ class BoundingVolumeHierarchy
             left_max.y() = best_split_position;
             right_min.y() = best_split_position;
         }
-        else if (best_axis == 2) // z-axis
+        else if (best_axis == 0) // z-axis
         {
             left_max.z() = best_split_position;
             right_min.z() = best_split_position;
@@ -215,10 +224,11 @@ class BoundingVolumeHierarchy
             Eigen::Vector3d triangle_max = triangle.get_max();
 
             // Check if the triangle is in the left half
-            if (triangle_max[best_axis] > best_split_position)
+            if (triangle_max[best_axis] <= best_split_position)
             {
                 left_triangle_indices.push_back(index);
                 // find the index of a vertex that is part of this triangle
+                // all_vertices has all vertices
                 for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
                 {
                     auto it = std::find(all_vertices.begin(), all_vertices.end(), vertex);
@@ -232,8 +242,9 @@ class BoundingVolumeHierarchy
                     }
                 }
             }
+
             // Check if the triangle is in the right half
-            else if (triangle_min[best_axis] < best_split_position)
+            else if (triangle_min[best_axis] >= best_split_position)
             {
                 right_triangle_indices.push_back(index);
                 for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
