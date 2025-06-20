@@ -698,12 +698,12 @@ int main(int argc, char *argv[])
                         std::cout << "Pushing right child: " << node.right_child_index << " to stack." << std::endl;
                         stack.push_back(node.right_child_index);
                     }
-                    if (current_node.left_child_index == -1 && current_node.right_child_index == -1)
+                    if (node.left_child_index == -1 && node.right_child_index == -1)
                     {
-                        std::cout << "Found Leaf node: " << k << " in Pixel (" << i << ", " << j << ")" << std::endl;
+                        std::cout << "Found Leaf node: " << node.own_index << " in Pixel (" << i << ", " << j << ")" << std::endl;
                         // If the node has no children, we can check for intersections directly
                         // #pragma omp parallel for
-                        for (int l : current_node.triangle_indices)
+                        for (int l : node.triangle_indices)
                         {
                             std::cout << "Checking triangle: " << l << " in Pixel (" << i << ", " << j << ")" << std::endl;
 
@@ -734,6 +734,7 @@ int main(int argc, char *argv[])
         // Make color dependent on normal of the triangle
         if (hit_anything)
         {
+            std::cout << "Coloring :D" << std::endl;
             // Intersection point
             Eigen::Vector3d intersection_point = cam.get_origin() + ray.direction() * closest_t;
 
