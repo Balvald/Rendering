@@ -5,10 +5,13 @@
 #include <vector>
 #include "triangle.h"
 
+
 class BoundingVolumeHierarchy
 {
     public:
     std::tuple<Eigen::Vector3d, Eigen::Vector3d> bounding_box;
+    // Eigen::Vector3d bbmin; // bounding box min
+    // Eigen::Vector3d bbmax; // bounding box max
 
     std::vector<int> triangle_indices;
     std::vector<int> vertex_indices;
@@ -213,6 +216,17 @@ class BoundingVolumeHierarchy
                       + dimensions.x() * dimensions.z()
                       + dimensions.y() * dimensions.z());
     }
+};
+
+
+class BoundingVolumeLeaf : public BoundingVolumeHierarchy
+{
+    public:
+    BoundingVolumeLeaf(const std::tuple<Eigen::Vector3d, Eigen::Vector3d>& bounding_box,
+                       const std::vector<int>& triangle_indices,
+                       const std::vector<int>& vertex_indices,
+                       int parent_index = -1)
+        : BoundingVolumeHierarchy(bounding_box, triangle_indices, vertex_indices, parent_index, -1, -1) {}
 };
 
 
