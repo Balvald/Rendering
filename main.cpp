@@ -188,8 +188,8 @@ void recursive_bvh_build(BoundingVolumeHierarchy &current_node,
     // right_child.set_parent_index(current_node.get_own_index());
 
     // Recursively build the left and right children
-    recursive_bvh_build(left_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
-    recursive_bvh_build(right_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
+    recursive_bvh_build(bvh_tree[left_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1);
+    recursive_bvh_build(bvh_tree[right_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1);
 }
 
 
