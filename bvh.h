@@ -99,11 +99,11 @@ class BoundingVolumeHierarchy
         // Create left and right bounding boxes
         BoundingVolumeHierarchy left_child(
             std::make_tuple(min, mid),
-            triangle_indices, vertex_indices, -1, -1, -1);
+            left_triangle_indices, left_vertex_indices, -1, -1, -1);
 
         BoundingVolumeHierarchy right_child(
             std::make_tuple(mid, max),
-            triangle_indices, vertex_indices, -1, -1, -1);
+            right_triangle_indices, right_vertex_indices, -1, -1, -1);
 
         return std::make_tuple(left_child, right_child);
     }
@@ -197,12 +197,61 @@ class BoundingVolumeHierarchy
             right_min.z() = best_split_position;
         }
 
+        std::vector<int> left_triangle_indices;
+        std::vector<int> right_triangle_indices;
+        std::vector<int> left_vertex_indices;
+        std::vector<int> right_vertex_indices;
+
+        // Split triangle indices based on the bounding box
+        for (int index : parent.triangle_indices)
+        {
+            Triangle triangle = all_triangles[index];
+            Eigen::Vector3d triangle_min = triangle.get_min();
+            Eigen::Vector3d triangle_max = triangle.get_max();
+
+            // Check if the triangle is in the left half
+            if (triangle_max[best_axis] <= best_split_position)
+            {
+                left_triangle_indices.push_back(index);
+                // find the index of a vertex that is part of this triangle
+                for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
+                {
+                    auto it = std::find(all_vertices.begin(), all_vertices.end(), vertex);
+                    if (it != all_vertices.end())
+                    {
+                        int vertex_index = std::distance(all_vertices.begin(), it);
+                        if (std::find(left_vertex_indices.begin(), left_vertex_indices.end(), vertex_index) == left_vertex_indices.end())
+                        {
+                            left_vertex_indices.push_back(vertex_index);
+                        }
+                    }
+                }
+            }
+            // Check if the triangle is in the right half
+            else if (triangle_min[best_axis] >= best_split_position)
+            {
+                right_triangle_indices.push_back(index);
+                for (const auto& vertex : {triangle.v1, triangle.v2, triangle.v3})
+                {
+                    auto it = std::find(all_vertices.begin(), all_vertices.end(), vertex);
+                    if (it != all_vertices.end())
+                    {
+                        int vertex_index = std::distance(all_vertices.begin(), it);
+                        if (std::find(right_vertex_indices.begin(), right_vertex_indices.end(), vertex_index) == right_vertex_indices.end())
+                        {
+                            right_vertex_indices.push_back(vertex_index);
+                        }
+                    }
+                }
+            }
+        }
+
         BoundingVolumeHierarchy left_child(
             std::make_tuple(left_min, left_max),
-            parent.triangle_indices, parent.vertex_indices, parent.parent_index, -1, -1);
+            left_triangle_indices, left_vertex_indices, parent.parent_index, -1, -1);
         BoundingVolumeHierarchy right_child(
             std::make_tuple(right_min, right_max),
-            parent.triangle_indices, parent.vertex_indices, parent.parent_index, -1, -1);
+            right_triangle_indices, right_vertex_indices, parent.parent_index, -1, -1);
 
         return std::make_tuple(left_child, right_child);
     }
@@ -216,17 +265,31 @@ class BoundingVolumeHierarchy
                       + dimensions.x() * dimensions.z()
                       + dimensions.y() * dimensions.z());
     }
-};
 
+    Eigen::Vector3d get_min() const
+    {
+        return std::get<0>(bounding_box);
+    }
 
-class BoundingVolumeLeaf : public BoundingVolumeHierarchy
-{
-    public:
-    BoundingVolumeLeaf(const std::tuple<Eigen::Vector3d, Eigen::Vector3d>& bounding_box,
-                       const std::vector<int>& triangle_indices,
-                       const std::vector<int>& vertex_indices,
-                       int parent_index = -1)
-        : BoundingVolumeHierarchy(bounding_box, triangle_indices, vertex_indices, parent_index, -1, -1) {}
+    Eigen::Vector3d get_max() const
+    {
+        return std::get<1>(bounding_box);
+    }
+
+    void set_parent_index(int index)
+    {
+        parent_index = index;
+    }
+
+    void set_left_child_index(int index)
+    {
+        left_child_index = index;
+    }
+
+    void set_right_child_index(int index)
+    {
+        right_child_index = index;
+    }
 };
 
 

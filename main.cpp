@@ -150,27 +150,32 @@ void recursive_bvh_build(BoundingVolumeHierarchy& current_node,
     }
 
     std::cout << "Building BVH at depth " << current_depth << " with " << current_node.triangle_indices.size() << " triangles.\n";
-    auto [a, b] = use_sah ? current_node.split_SAH(triangles, vertices, current_node) : current_node.split(triangles, vertices);
+    //  : current_node.split_SAH(triangles, vertices, current_node)
+    auto [a, b] = current_node.split_SAH(triangles, vertices, current_node);
 
     BoundingVolumeHierarchy left_child = a;
     BoundingVolumeHierarchy right_child = b;
+
+    // write out child triangle indices size
+    std::cout << "Left child has " << left_child.triangle_indices.size() << " triangles.\n";
+    std::cout << "Right child has " << right_child.triangle_indices.size() << " triangles.\n";
 
     // Recursively build the left and right children
     recursive_bvh_build(left_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
     recursive_bvh_build(right_child, triangles, vertices, bvh_tree, max_depth, current_depth + 1);
 
     // Add the left and right children to the BVH tree
+    current_node.set_left_child_index(bvh_tree.size()); // Last added node is the left child
     bvh_tree.push_back(left_child);
+    current_node.set_right_child_index(bvh_tree.size()); // Last added node is the right child
     bvh_tree.push_back(right_child);
 
-    // Update the current node with the left and right children indices
-    current_node.left_child_index = bvh_tree.size() - 2; // Last added node is the left child
-    current_node.right_child_index = bvh_tree.size() - 1; // Last added node is the right child
 
     // update the parent index of the children
     int parent_index = std::find(bvh_tree.begin(), bvh_tree.end(), current_node) - bvh_tree.begin();
-    left_child.parent_index = parent_index;
-    right_child.parent_index = parent_index;
+    left_child.set_parent_index(parent_index);
+    right_child.set_parent_index(parent_index);
+
 }
 
 
@@ -603,7 +608,7 @@ int main(int argc, char *argv[])
     long long finished_pixels = 0;
     long long total_pixels = image_width * image_height;
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int idx = 0; idx < image_width * image_height; ++idx)
     {
         int i = idx % image_width;
@@ -621,7 +626,7 @@ int main(int argc, char *argv[])
 
         Triangle closest_triangle;
 
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for (int k = 0; k < shape_elements.size(); ++k)
         {
             // Check if the ray intersects with the bounding box of the shape
@@ -684,12 +689,14 @@ int main(int argc, char *argv[])
                         {
                             int l = current_node.triangle_indices[m];
 
+                            std::cout << "Checking triangle: " << l << " in Pixel (" << i << ", " << j << ")" << std::endl;
+
                             Eigen::Vector3d intersection_point;
                             double t;
 
                             if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
                             {
-                                #pragma omp critical
+                                // #pragma omp critical
                                 {
                                     closest_t = t;
                                     closest_triangle = shape_triangles[l];
