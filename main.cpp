@@ -493,6 +493,17 @@ int main(int argc, char *argv[])
 
         recursive_bvh_build(bvh_trees.back().get_root(), shape_triangles, shape_vertices, bvh_trees.back().nodes, 10, 0, sah_set);
 
+        // go through each node in the bvh_tree and clear triangle and vertex indices if they are not a leaf node
+        for (int i = 0; i < bvh_trees.back().size(); ++i)
+        {
+            BoundingVolumeHierarchy& node = bvh_trees.back().get_node(i);
+            if (node.left_child_index != -1 && node.right_child_index != -1)
+            {
+                // this is not a leaf node, clear triangle and vertex indices
+                node.triangle_indices.clear();
+                node.vertex_indices.clear();
+            }
+        }
     }
 
     // print out all relevant information for each bvh_tree in bvh_trees
@@ -626,6 +637,7 @@ int main(int argc, char *argv[])
             // go through bounding volume hierarchy
             BVH_Tree bvh_tree = bvh_trees[k];
             BoundingVolumeHierarchy current_node = bvh_tree.get_root();
+
             // Check if the ray intersects with the bounding box of the BVH root
             if (!hit_boundingbox(ray, current_node.bounding_box))
             {
@@ -633,54 +645,59 @@ int main(int argc, char *argv[])
                 continue; // skip this shape if the ray does not intersect with the bounding box
             }
 
-            if (current_node.left_child_index != -1 || current_node.right_child_index != -1)
+
+            std::cout << "node is not a leaf node. " << std::endl;
+            // If the node has children, we need to traverse the BVH tree
+            std::vector<int> stack;
+            stack.push_back(0);
+
+            while (!stack.empty())
             {
-                // If the node has children, we need to traverse the BVH tree
-                std::vector<int> stack;
-                stack.push_back(0);
+                std::cout << "Now checking out bvh node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
+                BoundingVolumeHierarchy node = bvh_tree.get_node(stack.back());
+                stack.pop_back();
 
-                while (!stack.empty())
+                // Check if the ray intersects with the bounding box of the node
+                if (hit_boundingbox(ray, node.bounding_box))
                 {
-                    std::cout << "Now checking out bvh node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
-                    BoundingVolumeHierarchy node = bvh_tree.get_node(stack.back());
-                    stack.pop_back();
-
-                    // Check if the ray intersects with the bounding box of the node
-                    if (hit_boundingbox(ray, node.bounding_box))
+                    // Add children to the stack
+                    if (node.left_child_index != -1)
                     {
-                        // Add children to the stack
-                        if (node.left_child_index != -1)
+                        std::cout << "Pushing left child: " << node.left_child_index << " to stack." << std::endl;
+                        stack.push_back(node.left_child_index);
+                    }
+                    else if (node.right_child_index != -1)
+                    {
+                        std::cout << "Pushing right child: " << node.right_child_index << " to stack." << std::endl;
+                        stack.push_back(node.right_child_index);
+                    }
+                    else if (current_node.left_child_index == -1 && current_node.right_child_index == -1)
+                    {
+                        std::cout << "Found Leaf node: " << k << " in Pixel (" << i << ", " << j << ")" << std::endl;
+                        // If the node has no children, we can check for intersections directly
+                        // #pragma omp parallel for
+                        for (int m = 0; m < current_node.triangle_indices.size(); ++m)
                         {
-                            stack.push_back(node.left_child_index);
-                        }
-                        if (node.right_child_index != -1)
-                        {
-                            stack.push_back(node.right_child_index);
+                            int l = current_node.triangle_indices[m];
+
+                            Eigen::Vector3d intersection_point;
+                            double t;
+
+                            if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
+                            {
+                                #pragma omp critical
+                                {
+                                    closest_t = t;
+                                    closest_triangle = shape_triangles[l];
+                                    hit_anything = true;
+                                }
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                std::cout << "Found Leaf node: " << k << " in Pixel (" << i << ", " << j << ")" << std::endl;
-                // If the node has no children, we can check for intersections directly
-                #pragma omp parallel for
-                for (int m = 0; m < current_node.triangle_indices.size(); ++m)
+                else
                 {
-                    int l = current_node.triangle_indices[m];
-
-                    Eigen::Vector3d intersection_point;
-                    double t;
-
-                    if (shape_triangles[l].hit(ray, intersection_point, t) && (t < closest_t))
-                    {
-                        #pragma omp critical
-                        {
-                            closest_t = t;
-                            closest_triangle = shape_triangles[l];
-                            hit_anything = true;
-                        }
-                    }
+                    std::cout << "Ray does not intersect with bounding box of node: " << stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
                 }
             }
         }
