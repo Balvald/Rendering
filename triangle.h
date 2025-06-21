@@ -21,6 +21,10 @@ public:
     Eigen::Vector3d v2;
     Eigen::Vector3d v3;
 
+    int v1i;
+    int v2i;
+    int v3i;
+
     // make use of predefined normals if we have them
     bool predefined_normals = false;
     Eigen::Vector3d normal1;
