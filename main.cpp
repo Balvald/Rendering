@@ -149,7 +149,7 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
         return;
     }
 
-    std::cout << "Building BVH at depth " << current_depth << " with " << current_node.triangle_indices.size() << " triangles.\n";
+    // std::cout << "Building BVH at depth " << current_depth << " with " << current_node.triangle_indices.size() << " triangles.\n";
     //  : current_node.split_SAH(triangles, vertices, current_node)
     std::vector<BoundingVolumeHierarchy> children = current_node.split(triangles, vertices);
 

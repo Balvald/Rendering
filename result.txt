@@ -1,0 +1,13 @@
+fouranimals.obj (longest extend split) max depth 10.
+
+Rendering image...
+Full Rendering Pass finished in 218.29 seconds.
+BVH building finished in 5.10154 seconds.
+Rendering finished in 213.187 seconds.
+
+fouranimals.obj (longest extend split) max depth 15.
+
+Rendering image...
+Full Rendering Pass finished in 259.456 seconds.
+BVH building finished in 59.3809 seconds.
+Rendering finished in 200.074 seconds.
