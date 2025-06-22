@@ -99,14 +99,16 @@ class BoundingVolumeHierarchy
             if (p1[split_axis] >= right_min[split_axis] || p2[split_axis] >= right_min[split_axis] || p3[split_axis] >= right_min[split_axis])
                 in_right = true;
 
-            if (in_left) {
+            if (in_left)
+            {
                 left_triangle_indices.push_back(triangle_indices[i]);
                 left_vertex_indices.push_back(triangle.v1i);
                 left_vertex_indices.push_back(triangle.v2i);
                 left_vertex_indices.push_back(triangle.v3i);
             }
 
-            if (in_right) {
+            if (in_right)
+            {
                 right_triangle_indices.push_back(triangle_indices[i]);
                 right_vertex_indices.push_back(triangle.v1i);
                 right_vertex_indices.push_back(triangle.v2i);
@@ -130,25 +132,141 @@ class BoundingVolumeHierarchy
         return children;
     }
 
-    std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const {
+    [[nodiscard]] std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices, int num_buckets = 8) const
+    {
 
-        // Create the bounding boxes for the left and right children based on the best split position
-        Eigen::Vector3d left_min = std::get<0>(bounding_box);
-        Eigen::Vector3d left_max = std::get<1>(bounding_box);
-        Eigen::Vector3d right_min = std::get<0>(bounding_box);
-        Eigen::Vector3d right_max = std::get<1>(bounding_box);
+        double best_cost = std::numeric_limits<double>::max();
+        double best_split_position = 0.0;
+        int best_axis = 0; // 0 for x, 1 for y, 2 for z
 
+        double C_trav = 1.0;
+        double C_intersect = 1.0;
+
+        double S_total_surface_area = surface_area(bounding_box);
+
+        // Split the bounding box into two halves
+        Eigen::Vector3d min = std::get<0>(bounding_box);
+        Eigen::Vector3d max = std::get<1>(bounding_box);
+        Eigen::Vector3d dimensions = max - min;
+
+        for (int axis = 0; axis < 3; ++axis)
+        {
+            // Create buckets for the current axis
+            std::vector<std::vector<int>> buckets(num_buckets);
+            std::vector<double> bucket_surface_areas(num_buckets, 0.0);
+            std::vector<int> bucket_triangle_counts(num_buckets, 0);
+
+            // Distribute triangles into buckets based on their centroids
+            for (int index : triangle_indices)
+            {
+                Triangle triangle = all_triangles[index];
+                Eigen::Vector3d centroid = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
+
+                int bucket_index = static_cast<int>((centroid[axis] - min[axis]) / (max[axis] - min[axis]) * num_buckets);
+                bucket_index = std::clamp(bucket_index, 0, num_buckets - 1);
+
+                buckets[bucket_index].push_back(index);
+                bucket_triangle_counts[bucket_index]++;
+            }
+
+            // Calculate surface areas and costs for each split position
+            double left_area = 0.0;
+            double right_area = S_total_surface_area;
+
+            for (int i = 0; i < num_buckets - 1; ++i)
+            {
+                if (bucket_triangle_counts[i] > 0)
+                {
+                    Eigen::Vector3d left_min = min;
+                    Eigen::Vector3d left_max = max;
+                    left_max[axis] = min[axis] + (max[axis] - min[axis]) * (i + 1) / num_buckets;
+
+                    double left_bucket_area = surface_area(std::make_tuple(left_min, left_max));
+                    left_area += left_bucket_area * bucket_triangle_counts[i];
+                    right_area -= left_bucket_area * bucket_triangle_counts[i];
+
+                    double cost = C_trav + C_intersect * (left_area + right_area);
+                    if (cost < best_cost)
+                    {
+                        best_cost = cost;
+                        best_split_position = (min[axis] + max[axis]) / 2.0;
+                        best_axis = axis;
+                    }
+                }
+            }
+        }
+
+
+
+        Eigen::Vector3d mid = (min + max) / 2.0;
+
+        // Initialize the bounding boxes for left and right children
+        Eigen::Vector3d left_min = min;
+        Eigen::Vector3d left_max = max;
+        Eigen::Vector3d right_min = min;
+        Eigen::Vector3d right_max = max;
+
+        left_max[best_axis] = best_split_position;
+        right_min[best_axis] = best_split_position;
+
+        // compute volume before splitting
+        // double volume_before = dimensions.x() * dimensions.y() * dimensions.z();
+        // auto left_volume = left_max - left_min;
+        // double volume_after = left_volume.x() * left_volume.y() * left_volume.z();
+        // auto right_volume = right_max - right_min;
+        // double volume_after2 = right_volume.x() * right_volume.y() * right_volume.z();
+
+        // std::cout << "Volume before: " << volume_before << std::endl;
+        // std::cout << "Volume after: " << volume_after << std::endl;
+        // std::cout << "Volume after2: " << volume_after2 << std::endl;
+        // std::cout << "Volume ratio: " << volume_after + volume_after2 << std::endl;
+
+        // Create new triangle and vertex indices for the left and right children
         std::vector<int> left_triangle_indices;
         std::vector<int> right_triangle_indices;
         std::vector<int> left_vertex_indices;
         std::vector<int> right_vertex_indices;
 
+        // iterate over triangle
+        for (int i = 0; i < triangle_indices.size(); i++)
+        {
+            bool in_left = false;
+            bool in_right = false;
+            Triangle triangle = all_triangles[triangle_indices[i]];
+
+            // Check if vertices of triangle are in left and/or in right bounding box
+            Eigen::Vector3d p1 = Eigen::Vector3d(triangle.v1.x(), triangle.v1.y(), triangle.v1.z());
+            Eigen::Vector3d p2 = Eigen::Vector3d(triangle.v2.x(), triangle.v2.y(), triangle.v2.z());
+            Eigen::Vector3d p3 = Eigen::Vector3d(triangle.v3.x(), triangle.v3.y(), triangle.v3.z());
+
+            if (p1[best_axis] <= left_max[best_axis] || p2[best_axis] <= left_max[best_axis] || p3[best_axis] <= left_max[best_axis])
+                in_left = true;
+            if (p1[best_axis] >= right_min[best_axis] || p2[best_axis] >= right_min[best_axis] || p3[best_axis] >= right_min[best_axis])
+                in_right = true;
+
+            if (in_left) {
+                left_triangle_indices.push_back(triangle_indices[i]);
+                left_vertex_indices.push_back(triangle.v1i);
+                left_vertex_indices.push_back(triangle.v2i);
+                left_vertex_indices.push_back(triangle.v3i);
+            }
+
+            if (in_right) {
+                right_triangle_indices.push_back(triangle_indices[i]);
+                right_vertex_indices.push_back(triangle.v1i);
+                right_vertex_indices.push_back(triangle.v2i);
+                right_vertex_indices.push_back(triangle.v3i);
+            }
+        }
+
+        // Create left and right bounding boxes
         BoundingVolumeHierarchy left_child(
             std::make_tuple(left_min, left_max),
-            left_triangle_indices, left_vertex_indices, parent_index, -1, -1);
+            left_triangle_indices, left_vertex_indices, -1, -1, -1);
+
         BoundingVolumeHierarchy right_child(
             std::make_tuple(right_min, right_max),
-            right_triangle_indices, right_vertex_indices, parent_index, -1, -1);
+            right_triangle_indices, right_vertex_indices, -1, -1, -1);
 
         std::vector<BoundingVolumeHierarchy> children;
         children.push_back(left_child);
