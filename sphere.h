@@ -12,11 +12,9 @@ public:
     Eigen::Vector3d center;
     double radius;
 
-    Sphere(Eigen::Vector3d center, double radius) : center(center), radius(radius) {}
+    Sphere(const Eigen::Vector3d &center, const double radius) : center(center), radius(radius) {}
 
-    bool hit(const Ray& r, Eigen::Vector3d& out, double& t);
-
-    inline bool hit(const Ray& r, Eigen::Vector3d& out, double& t)
+    inline bool hit(const Ray& r, Eigen::Vector3d& out, double& t) const
     {
         // Ray: p(t) = origin + t * direction
         // Sphere: (p - center).squaredNorm() = radius^2

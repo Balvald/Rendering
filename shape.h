@@ -12,11 +12,11 @@ class Shape
         std::vector<Eigen::Vector3d> vertices;
         std::tuple<Eigen::Vector3d, Eigen::Vector3d> bounding_box;
 
-    Shape(std::vector<Triangle> triangles, std::vector<Eigen::Vector3d> vertices,
-          std::tuple<Eigen::Vector3d, Eigen::Vector3d> bounding_box)
+    Shape(const std::vector<Triangle> &triangles, const std::vector<Eigen::Vector3d> &vertices,
+          const std::tuple<Eigen::Vector3d, Eigen::Vector3d> &bounding_box)
         : triangles(triangles), vertices(vertices), bounding_box(bounding_box) {}
 
-    Shape(std::vector<Triangle> triangles, std::vector<Eigen::Vector3d> vertices) : triangles(triangles), vertices(vertices)
+    Shape(const std::vector<Triangle> &triangles, const std::vector<Eigen::Vector3d> &vertices) : triangles(triangles), vertices(vertices)
     {
         // Calculate bounding box from vertices
         if (vertices.empty())
