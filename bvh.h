@@ -24,7 +24,8 @@ class BoundingVolumeHierarchy
                             const std::vector<int>& vertex_indices,
                             int parent_index = -1,
                             int left_child_index = -1,
-                            int right_child_index = -1, int own_index = -1)
+                            int right_child_index = -1,
+                            int own_index = -1)
         : bounding_box(bounding_box),
           triangle_indices(triangle_indices),
           vertex_indices(vertex_indices),
