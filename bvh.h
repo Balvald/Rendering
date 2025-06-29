@@ -29,16 +29,16 @@ class BoundingVolumeHierarchy
           triangle_indices(triangle_indices),
           vertex_indices(vertex_indices),
           parent_index(parent_index),
-          own_index(own_index),
           left_child_index(left_child_index),
-          right_child_index(right_child_index) {}
+          right_child_index(right_child_index),
+          own_index(own_index) {}
 
     bool operator==(const BoundingVolumeHierarchy& other) const
     {
         return bounding_box == other.bounding_box;
     }
 
-    [[nodiscard]] std::vector<BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles) const
+    [[nodiscard]] std::vector<BoundingVolumeHierarchy> split(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices) const
     {
         // Split the bounding box into two halves
         Eigen::Vector3d min = std::get<0>(bounding_box);
@@ -132,7 +132,7 @@ class BoundingVolumeHierarchy
         return children;
     }
 
-    [[nodiscard]] std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, int num_buckets = 8) const
+    [[nodiscard]] std::vector<BoundingVolumeHierarchy> split_SAH(std::vector<Triangle> all_triangles, std::vector<Eigen::Vector3d> all_vertices, int num_buckets = 8) const
     {
 
         double best_cost = std::numeric_limits<double>::max();
@@ -147,7 +147,7 @@ class BoundingVolumeHierarchy
         // Split the bounding box into two halves
         Eigen::Vector3d min = std::get<0>(bounding_box);
         Eigen::Vector3d max = std::get<1>(bounding_box);
-        // Eigen::Vector3d dimensions = max - min;
+        Eigen::Vector3d dimensions = max - min;
 
         for (int axis = 0; axis < 3; ++axis)
         {
@@ -159,7 +159,7 @@ class BoundingVolumeHierarchy
             // Distribute triangles into buckets based on their centroids
             for (int index : triangle_indices)
             {
-                const Triangle& triangle = all_triangles[index];
+                Triangle triangle = all_triangles[index];
                 Eigen::Vector3d centroid = (triangle.v1 + triangle.v2 + triangle.v3) / 3.0;
 
                 int bucket_index = static_cast<int>((centroid[axis] - min[axis]) / (max[axis] - min[axis]) * num_buckets);
@@ -196,7 +196,9 @@ class BoundingVolumeHierarchy
             }
         }
 
-        // Eigen::Vector3d mid = (min + max) / 2.0;
+
+
+        Eigen::Vector3d mid = (min + max) / 2.0;
 
         // Initialize the bounding boxes for left and right children
         Eigen::Vector3d left_min = min;
@@ -273,10 +275,10 @@ class BoundingVolumeHierarchy
         return children;
     }
 
-    static double surface_area(const std::tuple<Eigen::Vector3d, Eigen::Vector3d> &box)
+    static double surface_area(std::tuple<Eigen::Vector3d, Eigen::Vector3d> box)
     {
-        const Eigen::Vector3d min = std::get<0>(box);
-        const Eigen::Vector3d max = std::get<1>(box);
+        Eigen::Vector3d min = std::get<0>(box);
+        Eigen::Vector3d max = std::get<1>(box);
         Eigen::Vector3d dimensions = max - min;
         return 2.0 * (dimensions.x() * dimensions.y()
                       + dimensions.x() * dimensions.z()
@@ -340,12 +342,12 @@ class BVH_Tree
     public:
     std::vector<BoundingVolumeHierarchy> nodes;
 
-    explicit BVH_Tree(const BoundingVolumeHierarchy &root)
+    BVH_Tree(BoundingVolumeHierarchy root)
     {
         nodes.push_back(root);
     }
 
-    explicit BVH_Tree(const std::vector<BoundingVolumeHierarchy>& nodes)
+    BVH_Tree(const std::vector<BoundingVolumeHierarchy>& nodes)
         : nodes(nodes) {}
 
     void add_node(const BoundingVolumeHierarchy& node)
@@ -363,9 +365,9 @@ class BVH_Tree
         return nodes[0];
     }
 
-    [[nodiscard]] int size() const
+    int size() const
     {
-        return static_cast<int>(nodes.size());
+        return nodes.size();
     }
 
     void clear()

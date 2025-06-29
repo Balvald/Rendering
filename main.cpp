@@ -7,6 +7,9 @@
 // with phong shiny, diffuse, show examples for the report.
 // analysis of features in phong
 
+// TODO: fix acceleration datastructures (bvh and bvh with sah)
+
+
 #include <Eigen/Dense>
 #include <iostream>
 #include <filesystem>
@@ -16,6 +19,7 @@
 #include "camera.h"
 #include "triangle.h"
 #include "bvh.h"
+#include "shape.h"
 
 #define CIMG
 #include "CImg.h"
@@ -36,7 +40,7 @@ inline void to_color(const Eigen::Vector3d &pixel_color, unsigned char* result)
     double g = pixel_color.y();
     double b = pixel_color.z();
 
-    constexpr double scale = 1.0;  // 1.0;
+    constexpr double scale = 1.0 / 1.0;
 
     r = r * scale;
     g = g * scale;
@@ -54,6 +58,11 @@ inline void write_color(std::ostream &out, const Eigen::Vector3d &pixel_color)
     out << static_cast<int>(result[0]) << ' '
         << static_cast<int>(result[1]) << ' '
         << static_cast<int>(result[2]) << '\n';
+}
+
+inline Eigen::Vector3d ray_color(Ray& r)
+{
+    return Eigen::Vector3d(0,0,0);
 }
 
 void load_model(const std::string &model_path,
@@ -127,7 +136,7 @@ bool hit_boundingbox(const Ray& r, const std::tuple<Eigen::Vector3d, Eigen::Vect
     return t_max_new > t_min_new;
 }
 
-void recursive_bvh_build(const BoundingVolumeHierarchy &current_node,
+void recursive_bvh_build(BoundingVolumeHierarchy current_node,
                          std::vector<Triangle> &triangles,
                          std::vector<Eigen::Vector3d> &vertices,
                          BVH_Tree &bvh_tree,
@@ -145,9 +154,9 @@ void recursive_bvh_build(const BoundingVolumeHierarchy &current_node,
     std::vector<BoundingVolumeHierarchy> children;
     children.reserve(2);
     if (use_sah)
-        children = current_node.split_SAH(triangles);
+        children = current_node.split_SAH(triangles, vertices);
     else
-        children = current_node.split(triangles);
+        children = current_node.split(triangles, vertices);
 
     BoundingVolumeHierarchy& left_child = children[0];
     BoundingVolumeHierarchy& right_child = children[1];
@@ -450,7 +459,6 @@ int main(int argc, char *argv[])
     Eigen::Vector3d min_corner = vertices[0];
     Eigen::Vector3d max_corner = vertices[0];
 
-    #pragma omp parallel for
     for (int i = 0; i < vertices.size(); ++i)
     {
         Eigen::Vector3d v = vertices[i];
@@ -483,8 +491,8 @@ int main(int argc, char *argv[])
 
     std::chrono::steady_clock::time_point render_start = std::chrono::steady_clock::now();
 
-    // long long finished_pixels = 0;
-    // long long total_pixels = image_width * image_height;
+    long long finished_pixels = 0;
+    long long total_pixels = image_width * image_height;
 
     #pragma omp parallel for
     for (int idx = 0; idx < image_width * image_height; ++idx)
@@ -594,7 +602,7 @@ int main(int argc, char *argv[])
             Eigen::Vector3d V = (cam.get_origin() - intersection_point).normalized(); // L_cam
 
             // Reflection direction
-            // Eigen::Vector3d R = (2.0 * ((N.dot(L)) * N) - L).normalized();  // L_refl
+            Eigen::Vector3d R = (2.0 * ((N.dot(L)) * N) - L).normalized();  // L_refl
 
             double ks = 0.7; // specular reflection constant
             double kd = 0.5; // diffuse reflection constant
