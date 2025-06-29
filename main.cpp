@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 
     // loading models
 
-    std::string path = std::string(".\\models\\fouranimals.obj");
+    std::string path = std::string(".\\models\\cube.obj");
 
     // Input handling
     // args: image_width, (image_height) -w -h
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-2" << "-" << image_width << "x" << image_height << "-" << path.substr(9) << ".bmp";
+    concat << "render-" << "phong-test-3" << "-" << image_width << "x" << image_height << "-" << path.substr(9) << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());

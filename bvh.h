@@ -19,6 +19,8 @@ class BoundingVolumeHierarchy
     int left_child_index = -1;      // if this stays -1, it means this node has no left child
     int right_child_index = -1;     // if this stays -1, it means this node has no right child
 
+    BoundingVolumeHierarchy() = default;
+
     BoundingVolumeHierarchy(const std::tuple<Eigen::Vector3d, Eigen::Vector3d>& bounding_box,
                             const std::vector<int>& triangle_indices,
                             const std::vector<int>& vertex_indices,
