@@ -208,6 +208,8 @@ class BoundingVolumeHierarchy
             }
         }
 
+        // build new bounding boxes from vertices.
+
         // Create left and right bounding boxes
         BoundingVolumeHierarchy left_child(
             std::make_tuple(left_min, left_max),
