@@ -140,7 +140,9 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
                          std::vector<Triangle> &triangles,
                          std::vector<Eigen::Vector3d> &vertices,
                          BVH_Tree &bvh_tree,
-                         int max_depth = 10, int current_depth = 0, bool use_sah = false, int max_trig = 20) {
+                         int max_depth = 10, int current_depth = 0,
+                         int method = 0, int max_trig = 20)
+{
     if (current_depth >= max_depth || current_node.triangle_indices.size() <= max_trig)
     {
         // std::cout << "Reached max depth or leaf node with " << current_node.triangle_indices.size() << " triangles.\n";
@@ -153,10 +155,14 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
     //  : current_node.split_SAH(triangles, vertices, current_node)
     std::vector<BoundingVolumeHierarchy> children;
     children.reserve(2);
-    if (use_sah)
+    if (method == 3)
         children = current_node.split_SAH(triangles, vertices);
-    else
+    else if (method == 2)
         children = current_node.split(triangles, vertices);
+    else if (method == 1)
+        children = current_node.split_x(triangles, vertices);
+    else
+        return; // method 0 or otherwise not specified we don't split at all. we just go with the root node being a leaf.
 
     BoundingVolumeHierarchy& left_child = children[0];
     BoundingVolumeHierarchy& right_child = children[1];
@@ -188,8 +194,8 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
     // std::cout << "Current node has parent index " << current_node.get_parent_index() << ".\n";
 
     // Recursively build the left and right children
-    recursive_bvh_build(bvh_tree.nodes[left_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1, use_sah, max_trig);
-    recursive_bvh_build(bvh_tree.nodes[right_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1, use_sah, max_trig);
+    recursive_bvh_build(bvh_tree.nodes[left_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1, method, max_trig);
+    recursive_bvh_build(bvh_tree.nodes[right_child_index], triangles, vertices, bvh_tree, max_depth, current_depth + 1, method, max_trig);
 }
 
 
@@ -248,7 +254,7 @@ int main(int argc, char *argv[])
     bool image_width_set = false;
     bool image_height_set = false;
 
-    bool sah_set = false;
+    int method = 0;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -321,7 +327,19 @@ int main(int argc, char *argv[])
         }
         else if (arg == "--sah")
         {
-            sah_set = true;
+            method = 3;
+        }
+        else if (arg == "--longest-extend")
+        {
+            method = 2;
+        }
+        else if (arg == "--split-x")
+        {
+            method = 1;
+        }
+        else if (arg == "--method")
+        {
+            method = std::stoi(argv[++i]);
         }
         image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
     }
@@ -482,7 +500,7 @@ int main(int argc, char *argv[])
 
     BVH_Tree bvh_tree = BVH_Tree(root_node);
 
-    recursive_bvh_build(bvh_tree.nodes[0], triangles, vertices, bvh_tree, 15, 0, sah_set, 10);
+    recursive_bvh_build(bvh_tree.nodes[0], triangles, vertices, bvh_tree, 15, 0, method, 10);
 
     std::chrono::steady_clock::time_point bvh_end = std::chrono::steady_clock::now();
 
