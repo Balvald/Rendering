@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
 
     BVH_Tree bvh_tree = BVH_Tree(root_node);
 
-    recursive_bvh_build(bvh_tree.nodes[0], triangles, vertices, bvh_tree, 15, 0, method, 10);
+    recursive_bvh_build(bvh_tree.nodes[0], triangles, vertices, bvh_tree, max_depth, 0, method, max_trig);
 
     std::chrono::steady_clock::time_point bvh_end = std::chrono::steady_clock::now();
 
