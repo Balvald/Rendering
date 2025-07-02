@@ -2,6 +2,9 @@ project('Raytracer', ['c', 'cpp'], default_options : ['cpp_std=c++20'], )
 
 subdir('models')
 
+fs = import('fs')
+fs.copyfile('experiment.py')
+
 if host_machine.system() == 'windows'
     # We are on Windows
     # Add MSMPI dependency by hand.
