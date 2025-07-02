@@ -255,6 +255,8 @@ int main(int argc, char *argv[])
     bool image_height_set = false;
 
     int method = 0;
+    int max_depth = 1;
+    int max_trig = 1000000000;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -340,6 +342,14 @@ int main(int argc, char *argv[])
         else if (arg == "--method")
         {
             method = std::stoi(argv[++i]);
+        }
+        else if (arg == "--max-depth")
+        {
+            max_depth = std::stoi(argv[++i]);
+        }
+        else if (arg == "--max-trig")
+        {
+            max_trig = std::stoi(argv[++i]);
         }
         image_height = static_cast<int>(image_width / cam.get_aspect_ratio());
     }
