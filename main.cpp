@@ -681,7 +681,8 @@ int main(int argc, char *argv[])
     }
 
     std::stringstream concat;
-    concat << "render-" << "phong-test-3" << "-" << image_width << "x" << image_height << "-" << path.substr(9) << ".bmp";
+    concat << "render-" << "phong-test-3" << "-" << image_width << "x" << image_height <<
+        "-method-" << method << "-md-" << max_depth <<"-mt-" << max_trig << "-" << path.substr(9) << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
