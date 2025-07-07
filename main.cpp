@@ -141,7 +141,7 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
                          std::vector<Eigen::Vector3d> &vertices,
                          BVH_Tree &bvh_tree,
                          int max_depth = 10, int current_depth = 0,
-                         int method = 0, int max_trig = 20)
+                         int method = 0, int max_trig = 20, int num_buckets = 8)
 {
     if (current_depth >= max_depth || current_node.triangle_indices.size() <= max_trig)
     {
@@ -156,7 +156,7 @@ void recursive_bvh_build(BoundingVolumeHierarchy current_node,
     std::vector<BoundingVolumeHierarchy> children;
     children.reserve(2);
     if (method == 3)
-        children = current_node.split_SAH(triangles, vertices);
+        children = current_node.split_SAH(triangles, vertices, num_buckets);
     else if (method == 2)
         children = current_node.split(triangles, vertices);
     else if (method == 1)
@@ -255,6 +255,7 @@ int main(int argc, char *argv[])
     int method = 0;
     int max_depth = 1;
     int max_trig = 1000000000;
+    int num_buckets = 8;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -328,6 +329,10 @@ int main(int argc, char *argv[])
         else if (arg == "--sah")
         {
             method = 3;
+        }
+        else if (arg == "--num-buckets")
+        {
+            num_buckets = std::stoi(argv[++i]);
         }
         else if (arg == "--longest-extend")
         {
@@ -514,7 +519,7 @@ int main(int argc, char *argv[])
 
     BVH_Tree bvh_tree = BVH_Tree(root_node);
 
-    recursive_bvh_build(bvh_tree.nodes[0], triangles, vertices, bvh_tree, max_depth, 0, method, max_trig);
+    recursive_bvh_build(bvh_tree.nodes[0], triangles, vertices, bvh_tree, max_depth, 0, method, max_trig, num_buckets);
 
     std::chrono::steady_clock::time_point bvh_end = std::chrono::steady_clock::now();
 
