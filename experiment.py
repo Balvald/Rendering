@@ -2,7 +2,7 @@
 
 import subprocess
 
-base_cmdline_args = " -f fouranimals.obj -w 1000 "
+base_cmdline_args = " -f .\\models\\fouranimals.obj -w 1000 "
 
 variable_args = [" --method", " --max-depth", " --max-trig", " --num-buckets"]
 
