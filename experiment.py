@@ -18,11 +18,10 @@ program = ".\\raytracer.exe"
 for i in method:
     for j in range(maximum_depth + 1):
         for k in maximum_trig:
+            bucketstring = ""
             if i == 3:
                 for l in max_buckets:
                     bucketstring = variable_args[3] + " " + str(l) + " "
-            else:
-                bucketstring = ""
             cmdline_args = base_cmdline_args + variable_args[0] + " " + str(i) + " " + \
                                                variable_args[1] + " " + str(j) + " " + \
                                                variable_args[2] + " " + str(k) + " " + \
