@@ -358,7 +358,11 @@ int main(int argc, char *argv[])
     }
 
     std::ofstream log_file;
-    std::string log_file_name = "log-" + path.substr(9) + "-" + std::to_string(method) + "-" + std::to_string(max_depth) + "-" + std::to_string(max_trig) + ".txt";
+    std::string log_file_name = "log-" + path.substr(9) + "-"
+                                       + std::to_string(method) + "-"
+                                       + std::to_string(max_depth) + "-"
+                                       + std::to_string(max_trig) + "-"
+                                       + std::to_string(num_buckets) + ".txt";
     log_file.open(log_file_name);
     log_file << "Hello I am rank " << rank << " of " << size << "\n";
     log_file << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
