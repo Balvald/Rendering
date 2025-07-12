@@ -66,30 +66,83 @@ if __name__ == "__main__":
     axis = 'method'  # Change this to 'max_depth', 'max_trig', or 'bins_count' as needed
     results = aggregate_data(axis, directory='.')
 
+    # sort results alphanumerically, while longer filename come later
+    results = {k: sorted(v, key=lambda x: (len(x), x)) for k, v in results.items()}
+
     regex = re.compile(r"([\d.e\+-]*) seconds.")
+
+    defined_method = 3
+    defined_max_depth = -1
+    defined_max_trig = 4
+    defined_bins_count = 10
+
+    ## Filter results based on defined variables (except for the free axis)
+    filtered_results = {}
+    for key, files in results.items():
+        filtered_files = []
+        for filename in files:
+            parsed = parse_filename(filename)
+            if parsed is None:
+                continue
+            method, max_depth, max_trig, bins_count = parsed
+            
+            # Check if file matches the defined constraints (skip the axis that is free)
+            match = True
+            if axis != 'method' and defined_method != -1 and method != defined_method:
+                match = False
+            if axis != 'max_depth' and defined_max_depth != -1 and max_depth != defined_max_depth:
+                match = False
+            if axis != 'max_trig' and defined_max_trig != -1 and max_trig != defined_max_trig:
+                match = False
+            if axis != 'bins_count' and defined_bins_count != -1 and bins_count != defined_bins_count:
+                match = False
+            
+            if match:
+                filtered_files.append(filename)
+        
+        if filtered_files:  # Only keep keys that have matching files
+            filtered_results[key] = filtered_files
 
     # for each file we now have to extract the data and aggregate it
     aggregated_data = {}
-    files = list(results.values())[0]
-    for filename in files:
-        print(f"Aggregating data from file: {filename}")
-        with open(filename, 'r') as f:
-            content = f.read()
-            matches = regex.findall(content)
-            for match in matches:
-                if match:
-                    time = float(match)
-                    if time not in aggregated_data:
-                        aggregated_data[time] = []
-                    aggregated_data[time].append(filename)
+    for key, files in filtered_results.items():
+        for filename in files:
+            print(f"Aggregating data from file: {filename}")
+            with open(filename, 'r') as f:
+                content = f.read()
+                matches = regex.findall(content)
+                for match in matches:
+                    if match:
+                        time = float(match)
+                        if filename not in aggregated_data:
+                            aggregated_data[filename] = []
+                        aggregated_data[filename].append(time)
+
+    method_used = ["Nothing", "BVH Splitting X", "Longest Extension", "SAH"]
+
     # Plotting the aggregated data
     plt.figure(figsize=(10, 6))
-    for time, files in aggregated_data.items():
-        plt.plot(files, [time] * len(files), marker='o', linestyle='', label=f'Time: {time} seconds')
-    plt.xlabel('Files')
+    print(aggregated_data)
+    for key, times in aggregated_data.items():
+        # filter for the axis in key (which is a filename)
+        split = key.split('-')
+        method_value = split[2]
+        max_depth_value = split[3]
+        max_trig_value = split[4]
+        bins_count_value = split[5].strip('.txt')
+
+        print(f"method: {method_value}, max_depth: {max_depth_value}, max_trig: {max_trig_value}, bins_count: {bins_count_value}")
+
+        # build the label for the plot
+        string = method_used[int(method_value)] + f", d: {max_depth_value}, m: {max_trig_value}, b: {bins_count_value}"
+
+        plt.plot(string, times[0], marker='o', linestyle='', label=f'{axis}: {key}')
+        # plt.plot(key, times[1], marker='o', linestyle='', label=f'{axis}: {key}')
+        # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
+    plt.xlabel(f'{axis.title()}')
     plt.ylabel('Time (seconds)')
     plt.title(f'Aggregated Data by {axis}')
-    plt.legend()
+    # plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()

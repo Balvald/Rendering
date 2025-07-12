@@ -564,7 +564,7 @@ int main(int argc, char *argv[])
         {
             // log_file << "Now checking out bvh node: " << bvh_index_stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
             const int current_index = bvh_index_stack.back();
-            BoundingVolumeHierarchy node = bvh_tree.get_node(current_index);
+            BoundingVolumeHierarchy& node = bvh_tree.get_node(current_index);
             bvh_index_stack.pop_back();
 
             // Check if the ray intersects with the bounding box of the node
