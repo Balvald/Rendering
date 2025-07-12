@@ -557,6 +557,7 @@ int main(int argc, char *argv[])
         // log_file << "Hit basic node" << std::endl;
         // If the node has children, we need to traverse the BVH tree
         std::vector<int> bvh_index_stack;
+        bvh_index_stack.reserve(max_depth * 2);
         bvh_index_stack.push_back(0);
 
         while (!bvh_index_stack.empty())
