@@ -3,13 +3,6 @@
 //  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
 //
 
-// (interesting more than one light source)
-// with phong shiny, diffuse, show examples for the report.
-// analysis of features in phong
-
-// TODO: fix acceleration datastructures (bvh and bvh with sah)
-
-
 #include <Eigen/Dense>
 #include <iostream>
 #include <filesystem>
@@ -253,7 +246,7 @@ int main(int argc, char *argv[])
     bool image_height_set = false;
 
     int method = 0;
-    int max_depth = 1;
+    int max_depth = 1000;
     int max_trig = 1000000000;
     int num_buckets = 8;
 
