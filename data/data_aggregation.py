@@ -123,6 +123,10 @@ if __name__ == "__main__":
     # Plotting the aggregated data
     plt.figure(figsize=(10, 6))
     print(aggregated_data)
+
+    depthvalues = []
+    alltimes = []
+
     for key, times in aggregated_data.items():
         # filter for the axis in key (which is a filename)
         split = key.split('-')
@@ -131,17 +135,27 @@ if __name__ == "__main__":
         max_trig_value = split[4]
         bins_count_value = split[5].strip('.txt')
 
+        if int(max_depth_value) < 1:
+            continue
+
         print(f"method: {method_value}, max_depth: {max_depth_value}, max_trig: {max_trig_value}, bins_count: {bins_count_value}")
 
         # build the label for the plot
         string = method_used[int(method_value)] + f", d: {max_depth_value}, m: {max_trig_value}, b: {bins_count_value}"
 
-        plt.plot(string, times[0], marker='o', linestyle='', label=f'{axis}: {key}')
+        # plt.plot(string, times[0], marker='o', linestyle='', label=f'{axis}: {key}')
+
+        depthvalues.append(int(max_depth_value))
+        alltimes.append(times[0])
+
         # plt.plot(key, times[1], marker='o', linestyle='', label=f'{axis}: {key}')
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
-    plt.xlabel(f'{axis.title()}')
-    plt.ylabel('Time (seconds)')
-    plt.title(f'Aggregated Data by {axis}')
+
+    plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+
+    plt.xlabel('Max depth of BVH')
+    plt.ylabel('Time (in seconds)')
+    plt.title(f'Performance in relation to BVH depth for {method_used[int(defined_method)]}')
     # plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
