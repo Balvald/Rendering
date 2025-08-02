@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
     plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
 
-    plt.xlabel('Max depth of BVH')
+    plt.xlabel('Maximum Triangles per Leaf Node')
     plt.ylabel('Time (in seconds)')
     plt.title(f'Performance in relation to BVH depth for {method_used[int(defined_method)]}')
     # plt.legend()
