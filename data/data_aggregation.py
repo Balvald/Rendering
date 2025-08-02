@@ -74,12 +74,9 @@ if __name__ == "__main__":
 
     print(f"Aggregated results for axis '{axis}': {results}")
 
-    # sort results alphanumerically, while longer filename come later
-    results = {k: sorted(v, key=lambda x: (len(x), x)) for k, v in results.items()}
-
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
-    defined_method = 1
+    defined_method = 0
     defined_max_depth = 10
     defined_max_trig = -1
     defined_bins_count = -1
@@ -132,6 +129,9 @@ if __name__ == "__main__":
     plt.figure(figsize=(10, 6))
     print(aggregated_data)
 
+    # sort aggregated_data by filenames
+    aggregated_data = {k: aggregated_data[k] for k in sorted(aggregated_data, key=lambda x: (len(x), x))}
+
     depthvalues = []
     alltimes = []
     alltimes2 = []
@@ -173,12 +173,12 @@ if __name__ == "__main__":
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
 
     plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
-    plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
+    # plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
 
     plt.xlabel('Maximum Triangles per Leaf Node')
     plt.ylabel('Time (in seconds)')
-    plt.title(f'Performance in relation to BVH depth for {method_used[int(defined_method)]}')
+    plt.title('Performance in relation to Max Triangles per leaf using Naive Splitting')
     # plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
