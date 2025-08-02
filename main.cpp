@@ -1,6 +1,6 @@
 //
 //  Florian Probst
-//  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
+//  E-Mail: probstf@informatik.uni-freiburg.de / florian.probst@email.uni-freiburg.de / derbalvald@gmail.com
 //
 
 #include <Eigen/Dense>
@@ -364,9 +364,11 @@ int main(int argc, char *argv[])
                                        + std::to_string(max_trig) + "-"
                                        + std::to_string(num_buckets) + ".txt";
     log_file.open(log_file_name);
+
+    // Remnant of planned MPI implementation, idea was to run experiments with it on bwunicluster.
+    // Not done due to time constraints. :c
     log_file << "Hello I am rank " << rank << " of " << size << "\n";
     log_file << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
-
 
     cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
 
