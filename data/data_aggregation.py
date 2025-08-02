@@ -17,6 +17,12 @@ def parse_filename(filename) -> tuple:
                 return tuple(map(int, parts))
             except ValueError:
                 return None
+        elif len(parts) == 3:
+            try:
+                parts.append(-1)
+                return tuple(map(int, parts))  # Assuming -1 for bins_count if not present
+            except ValueError:
+                return None
     return None
 
 
@@ -63,18 +69,20 @@ def aggregate_data(axis, directory='.') -> dict:
 
 
 if __name__ == "__main__":
-    axis = 'method'  # Change this to 'max_depth', 'max_trig', or 'bins_count' as needed
+    axis = 'max_trig'  # Change this to 'max_depth', 'max_trig', or 'bins_count' as needed
     results = aggregate_data(axis, directory='.')
+
+    print(f"Aggregated results for axis '{axis}': {results}")
 
     # sort results alphanumerically, while longer filename come later
     results = {k: sorted(v, key=lambda x: (len(x), x)) for k, v in results.items()}
 
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
-    defined_method = 3
+    defined_method = 1
     defined_max_depth = 10
     defined_max_trig = -1
-    defined_bins_count = 10
+    defined_bins_count = -1
 
     # Filter results based on defined variables (except for the free axis)
     filtered_results = {}
@@ -126,6 +134,8 @@ if __name__ == "__main__":
 
     depthvalues = []
     alltimes = []
+    alltimes2 = []
+    alltimes3 = []
     all_max_trig = []
     all_bins_count = []
     all_methods = []
@@ -135,8 +145,11 @@ if __name__ == "__main__":
         split = key.split('-')
         method_value = split[2]
         max_depth_value = split[3]
-        max_trig_value = split[4]
-        bins_count_value = split[5].strip('.txt')
+        max_trig_value = split[4].strip('.txt')
+        if len(split) < 6:
+            bins_count_value = -1
+        else:
+            bins_count_value = split[5].strip('.txt')
 
         # if int(max_depth_value) < 1:
         #     continue
@@ -150,6 +163,8 @@ if __name__ == "__main__":
 
         depthvalues.append(int(max_depth_value))
         alltimes.append(times[0])
+        alltimes2.append(times[1])
+        alltimes3.append(times[2])
         all_max_trig.append(int(max_trig_value))
         all_bins_count.append(int(bins_count_value))
         all_methods.append(method_used[int(method_value)])
@@ -158,6 +173,8 @@ if __name__ == "__main__":
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
 
     plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
 
     plt.xlabel('Maximum Triangles per Leaf Node')
     plt.ylabel('Time (in seconds)')
