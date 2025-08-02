@@ -97,10 +97,17 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
     // id intensity of diffuse component
     // ia intensity of ambient component
 
-    // L_m is the direction vector from the point on the surface toward each light source. (we currently only have one)
-    // N is the normal at this point on the surface
+    // L_m is the direction vector from the point on the surface toward each light source.
+    // (\vec{\omega}_i in CG course notes)
+
+    // N is the normal at this point on the surface 
+    // (\vec{n} in CG course notes)
+
     // R_m is the direction that a perfectly reflected ray of light would take.
-    // V is the direction pointing towards the viewer
+    // (\vec{r} in CG course notes)
+
+    // V is the direction pointing towards the viewer/camera
+    // (\vec{\omega}_o in CG course notes)
 
     Eigen::Vector3d R = 2.0 * N.dot(L) * N - L; // reflection direction
 
