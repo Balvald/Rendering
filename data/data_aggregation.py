@@ -72,11 +72,11 @@ if __name__ == "__main__":
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
     defined_method = 3
-    defined_max_depth = -1
-    defined_max_trig = 4
+    defined_max_depth = 10
+    defined_max_trig = -1
     defined_bins_count = 10
 
-    ## Filter results based on defined variables (except for the free axis)
+    # Filter results based on defined variables (except for the free axis)
     filtered_results = {}
     for key, files in results.items():
         filtered_files = []
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             if parsed is None:
                 continue
             method, max_depth, max_trig, bins_count = parsed
-            
+
             # Check if file matches the defined constraints (skip the axis that is free)
             match = True
             if axis != 'method' and defined_method != -1 and method != defined_method:
@@ -96,10 +96,10 @@ if __name__ == "__main__":
                 match = False
             if axis != 'bins_count' and defined_bins_count != -1 and bins_count != defined_bins_count:
                 match = False
-            
+
             if match:
                 filtered_files.append(filename)
-        
+
         if filtered_files:  # Only keep keys that have matching files
             filtered_results[key] = filtered_files
 
@@ -126,6 +126,9 @@ if __name__ == "__main__":
 
     depthvalues = []
     alltimes = []
+    all_max_trig = []
+    all_bins_count = []
+    all_methods = []
 
     for key, times in aggregated_data.items():
         # filter for the axis in key (which is a filename)
@@ -135,8 +138,8 @@ if __name__ == "__main__":
         max_trig_value = split[4]
         bins_count_value = split[5].strip('.txt')
 
-        if int(max_depth_value) < 1:
-            continue
+        # if int(max_depth_value) < 1:
+        #     continue
 
         print(f"method: {method_value}, max_depth: {max_depth_value}, max_trig: {max_trig_value}, bins_count: {bins_count_value}")
 
@@ -147,11 +150,14 @@ if __name__ == "__main__":
 
         depthvalues.append(int(max_depth_value))
         alltimes.append(times[0])
+        all_max_trig.append(int(max_trig_value))
+        all_bins_count.append(int(bins_count_value))
+        all_methods.append(method_used[int(method_value)])
 
         # plt.plot(key, times[1], marker='o', linestyle='', label=f'{axis}: {key}')
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
 
-    plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
 
     plt.xlabel('Max depth of BVH')
     plt.ylabel('Time (in seconds)')
