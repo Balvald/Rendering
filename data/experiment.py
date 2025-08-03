@@ -8,9 +8,10 @@ variable_args = [" --method", " --max-depth", " --max-trig", " --num-buckets"]
 
 method = [0, 1, 2, 3]
 method = [3]
-maximum_depth = 10
-maximum_trig = [1024, 512, 256, 128, 64, 32, 16, 8, 4]
+maximum_depth = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+maximum_trig = [1024]
 max_buckets = [1, 2, 4, 8, 10, 12, 14]
+max_buckets = [16, 18, 20, 22]
 
 program = ".\\raytracer.exe"
 
