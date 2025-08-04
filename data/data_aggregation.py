@@ -8,8 +8,8 @@ import re
 
 def parse_filename(filename) -> tuple:
     """Parse the filename and return method, max_depth, max_trig, bins_count as integers, or None if invalid."""
-    if filename.startswith('log-fouranimals.obj-') and filename.endswith('.txt'):
-        parts = filename[len('log-fouranimals.obj-'):-4].split('-')
+    if filename.startswith('log-hairball.obj-') and filename.endswith('.txt'):
+        parts = filename[len('log-hairball.obj-'):-4].split('-')
         print(f"Parsing filename: {filename}, parts: {parts}")
         if len(parts) == 4:
             try:
@@ -68,7 +68,7 @@ def aggregate_data(axis, directory='.') -> dict:
 
 
 if __name__ == "__main__":
-    axis = 'max_trig'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
+    axis = 'max_depth'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
     results = aggregate_data(axis, directory='.')
 
     print(f"Aggregated results for axis '{axis}': {results}")
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
     defined_method = 3
-    defined_max_depth = 1000
-    defined_max_trig = -1
-    defined_bins_count = 26
+    defined_max_depth = -1
+    defined_max_trig = 12
+    defined_bins_count = -1
 
     # Filter results based on defined variables (except for the free axis)
     filtered_results = {}
@@ -171,24 +171,24 @@ if __name__ == "__main__":
         # plt.plot(key, times[1], marker='o', linestyle='', label=f'{axis}: {key}')
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
 
-    plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    # plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_bins_count, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'total time')
+    plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'construction time')
+    plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'traversal time')
     # plt.plot(all_methods, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_methods, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_methods, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
 
 
-    plt.xlabel('Maximum Triangles')
+    plt.xlabel('Maximum Depth')
     plt.ylabel('Time (in seconds)')
-    plt.title('Performance in relation to Maximum Triangles using SAH with 26 bins')
-    # plt.legend()
+    plt.title('Performance in relation to Maximum Depth using SAH with 4 bins')
+    plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
