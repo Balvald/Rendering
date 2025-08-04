@@ -696,9 +696,11 @@ int main(int argc, char *argv[])
 
     }
 
+    if (method != 3) num_buckets = 0; // if we don't use the SAH method, we don't need to store the number of buckets
+
     std::stringstream concat;
     concat << "render-" << "phong-test-3" << "-" << image_width << "x" << image_height <<
-        "-method-" << method << "-md-" << max_depth <<"-mt-" << max_trig << "-" << path.substr(9) << ".bmp";
+        "-method-" << method << "-md-" << max_depth <<"-mt-" << max_trig << "-b-" << num_buckets << "-" << path.substr(9) << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());

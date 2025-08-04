@@ -69,16 +69,16 @@ def aggregate_data(axis, directory='.') -> dict:
 
 
 if __name__ == "__main__":
-    axis = 'max_trig'  # Change this to 'max_depth', 'max_trig', or 'bins_count' as needed
+    axis = 'bins_count'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
     results = aggregate_data(axis, directory='.')
 
     print(f"Aggregated results for axis '{axis}': {results}")
 
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
-    defined_method = 1
+    defined_method = 3
     defined_max_depth = 10
-    defined_max_trig = -1
+    defined_max_trig = 1024
     defined_bins_count = -1
 
     # Filter results based on defined variables (except for the free axis)
@@ -172,12 +172,12 @@ if __name__ == "__main__":
         # plt.plot(key, times[1], marker='o', linestyle='', label=f'{axis}: {key}')
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
 
-    plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    # plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
-    plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    # plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_bins_count, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
