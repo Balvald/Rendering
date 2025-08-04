@@ -6,7 +6,6 @@ import re
 
 # all files in the same directory as this file are named in the form "log-fouranimals.obj-A-B-C-D.txt" where A,B,C and D are integers for method, max_depth, max_trig and bins_count.
 
-
 def parse_filename(filename) -> tuple:
     """Parse the filename and return method, max_depth, max_trig, bins_count as integers, or None if invalid."""
     if filename.startswith('log-fouranimals.obj-') and filename.endswith('.txt'):
@@ -69,7 +68,7 @@ def aggregate_data(axis, directory='.') -> dict:
 
 
 if __name__ == "__main__":
-    axis = 'bins_count'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
+    axis = 'max_trig'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
     results = aggregate_data(axis, directory='.')
 
     print(f"Aggregated results for axis '{axis}': {results}")
@@ -77,9 +76,9 @@ if __name__ == "__main__":
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
     defined_method = 3
-    defined_max_depth = 10
-    defined_max_trig = 1024
-    defined_bins_count = -1
+    defined_max_depth = 1000
+    defined_max_trig = -1
+    defined_bins_count = 26
 
     # Filter results based on defined variables (except for the free axis)
     filtered_results = {}
@@ -172,12 +171,12 @@ if __name__ == "__main__":
         # plt.plot(key, times[1], marker='o', linestyle='', label=f'{axis}: {key}')
         # plt.plot(key, times[2], marker='o', linestyle='', label=f'{axis}: {key}')
 
-    # plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
-    plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
+    # plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_bins_count, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
-    plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
+    # plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
@@ -186,9 +185,9 @@ if __name__ == "__main__":
     # plt.plot(all_methods, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
 
 
-    plt.xlabel('Maximum Triangles per Leaf Node')
+    plt.xlabel('Maximum Triangles')
     plt.ylabel('Time (in seconds)')
-    plt.title('Performance in relation to Max Triangles per leaf using Single Axis Splitting')
+    plt.title('Performance in relation to Maximum Triangles using SAH with 26 bins')
     # plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
