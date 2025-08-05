@@ -68,7 +68,7 @@ def aggregate_data(axis, directory='.') -> dict:
 
 
 if __name__ == "__main__":
-    axis = 'max_depth'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
+    axis = 'bins_count'  # Change this to 'method' 'max_depth', 'max_trig', or 'bins_count' as needed
     results = aggregate_data(axis, directory='.')
 
     print(f"Aggregated results for axis '{axis}': {results}")
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     regex = re.compile(r"([\d.e\+-]*) seconds.")
 
     defined_method = 3
-    defined_max_depth = -1
+    defined_max_depth = 8
     defined_max_trig = 12
     defined_bins_count = -1
 
@@ -174,20 +174,19 @@ if __name__ == "__main__":
     # plt.plot(all_max_trig, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(all_bins_count, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
-    # plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
-    plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'total time')
-    plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'construction time')
-    plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'traversal time')
+    plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'total time')
+    plt.plot(all_bins_count, alltimes2, marker='o', linestyle='-', label=f'construction time')
+    plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'traversal time')
+    # plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'total time')
+    # plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'construction time')
+    # plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'traversal time')
     # plt.plot(all_methods, alltimes, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_methods, alltimes2, marker='o', linestyle='-', label=f'{axis}: {key}')
     # plt.plot(all_methods, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
 
-
-    plt.xlabel('Maximum Depth')
+    plt.xlabel('Bin Count')
     plt.ylabel('Time (in seconds)')
-    plt.title('Performance in relation to Maximum Depth using SAH with 4 bins')
+    plt.title('Performance of Hairball in relation to Bin Count using SAH')
     plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
