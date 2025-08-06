@@ -109,7 +109,7 @@ public:
         edge2 = vertex2 - vertex0;
         h = r.direction().cross(edge2);
         a = edge1.dot(h);
-        if (a > -epsilon && a < epsilon)
+        if (abs(a) < epsilon)
             return false;    // This ray is parallel to this triangle.
         f = 1.0 / a;
         s = r.origin() - vertex0;

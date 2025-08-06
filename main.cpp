@@ -1,14 +1,7 @@
 //
 //  Florian Probst
-//  E-Mail: probstf@informatik.uni-freiburg.de / derbalvald@gmail.com
+//  E-Mail: probstf@informatik.uni-freiburg.de / florian.probst@email.uni-freiburg.de / derbalvald@gmail.com
 //
-
-// (interesting more than one light source)
-// with phong shiny, diffuse, show examples for the report.
-// analysis of features in phong
-
-// TODO: fix acceleration datastructures (bvh and bvh with sah)
-
 
 #include <Eigen/Dense>
 #include <iostream>
@@ -104,10 +97,17 @@ Eigen::Vector3d phong(const Eigen::Vector3d& V,
     // id intensity of diffuse component
     // ia intensity of ambient component
 
-    // L_m is the direction vector from the point on the surface toward each light source. (we currently only have one)
-    // N is the normal at this point on the surface
+    // L_m is the direction vector from the point on the surface toward each light source.
+    // (\vec{\omega}_i in CG course notes)
+
+    // N is the normal at this point on the surface 
+    // (\vec{n} in CG course notes)
+
     // R_m is the direction that a perfectly reflected ray of light would take.
-    // V is the direction pointing towards the viewer
+    // (\vec{r} in CG course notes)
+
+    // V is the direction pointing towards the viewer/camera
+    // (\vec{\omega}_o in CG course notes)
 
     Eigen::Vector3d R = 2.0 * N.dot(L) * N - L; // reflection direction
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
     bool image_height_set = false;
 
     int method = 0;
-    int max_depth = 1;
+    int max_depth = 1000;
     int max_trig = 1000000000;
     int num_buckets = 8;
 
@@ -358,11 +358,17 @@ int main(int argc, char *argv[])
     }
 
     std::ofstream log_file;
-    std::string log_file_name = "log-" + path.substr(9) + "-" + std::to_string(method) + "-" + std::to_string(max_depth) + "-" + std::to_string(max_trig) + ".txt";
+    std::string log_file_name = "log-" + path.substr(9) + "-"
+                                       + std::to_string(method) + "-"
+                                       + std::to_string(max_depth) + "-"
+                                       + std::to_string(max_trig) + "-"
+                                       + std::to_string(num_buckets) + ".txt";
     log_file.open(log_file_name);
+
+    // Remnant of planned MPI implementation, idea was to run experiments with it on bwunicluster.
+    // Not done due to time constraints. :c
     log_file << "Hello I am rank " << rank << " of " << size << "\n";
     log_file << "Camera aspect ratio: " << cam.get_aspect_ratio() << "\n";
-
 
     cimg_library::CImg<float> image(image_width, image_height, 1, 3, 0);
 
@@ -553,13 +559,14 @@ int main(int argc, char *argv[])
         // log_file << "Hit basic node" << std::endl;
         // If the node has children, we need to traverse the BVH tree
         std::vector<int> bvh_index_stack;
+        bvh_index_stack.reserve(max_depth * 2);
         bvh_index_stack.push_back(0);
 
         while (!bvh_index_stack.empty())
         {
             // log_file << "Now checking out bvh node: " << bvh_index_stack.back() << " in Pixel (" << i << ", " << j << ")" << std::endl;
             const int current_index = bvh_index_stack.back();
-            BoundingVolumeHierarchy node = bvh_tree.get_node(current_index);
+            BoundingVolumeHierarchy& node = bvh_tree.get_node(current_index);
             bvh_index_stack.pop_back();
 
             // Check if the ray intersects with the bounding box of the node
@@ -689,9 +696,11 @@ int main(int argc, char *argv[])
 
     }
 
+    if (method != 3) num_buckets = 0; // if we don't use the SAH method, we don't need to store the number of buckets
+
     std::stringstream concat;
     concat << "render-" << "phong-test-3" << "-" << image_width << "x" << image_height <<
-        "-method-" << method << "-md-" << max_depth <<"-mt-" << max_trig << "-" << path.substr(9) << ".bmp";
+        "-method-" << method << "-md-" << max_depth <<"-mt-" << max_trig << "-b-" << num_buckets << "-" << path.substr(9) << ".bmp";
     std::string filename = concat.str();
 
     auto test = image.save(filename.c_str());
