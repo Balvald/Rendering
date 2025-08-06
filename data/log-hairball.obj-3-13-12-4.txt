@@ -1,11 +1,0 @@
-Hello I am rank 0 of 1
-Camera aspect ratio: 1.77778
-shape.mesh.indices.size(): 8640000
-shape.mesh.num_face_vertices.size(): 2880000
-Number of triangles: 2880000
-Rendering image...
-Full Rendering Pass finished in 1408.68 seconds.
-BVH building finished in 1291.96 seconds.
-Rendering finished in 116.714 seconds.
-Done.                 
-Goodbye from rank 0
