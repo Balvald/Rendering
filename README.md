@@ -1,3 +1,3 @@
 # Rendering
 
-Rendering Lab Course - Implementation of a Raytracer
+Rendering Lab Course - Datastructures for Raycasting
