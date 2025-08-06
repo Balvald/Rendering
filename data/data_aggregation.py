@@ -176,7 +176,7 @@ if __name__ == "__main__":
     # plt.plot(all_max_trig, alltimes3, marker='o', linestyle='-', label=f'{axis}: {key}')
     plt.plot(all_bins_count, alltimes, marker='o', linestyle='-', label=f'total time')
     plt.plot(all_bins_count, alltimes2, marker='o', linestyle='-', label=f'construction time')
-    plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'traversal time')
+    plt.plot(all_bins_count, alltimes3, marker='o', linestyle='-', label=f'traversal & rasterisation time')
     # plt.plot(depthvalues, alltimes, marker='o', linestyle='-', label=f'total time')
     # plt.plot(depthvalues, alltimes2, marker='o', linestyle='-', label=f'construction time')
     # plt.plot(depthvalues, alltimes3, marker='o', linestyle='-', label=f'traversal time')
